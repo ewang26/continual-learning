@@ -1,0 +1,51 @@
+#!/bin/bash
+#SBATCH -n 1
+#SBATCH -N 1
+#SBATCH -p gpu
+#SBATCH -t 0-03:00
+#SBATCH --mem=100
+#SBATCH --gres=gpu:1
+#SBATCH --job-name=continual_learning
+#SBATCH -o logs/train_eval_%j.out
+#SBATCH -e logs/train_eval_%j.err
+
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+
+# Define paths
+MAIN_PATH="/n/home12/thb489/continual-learning"
+VENV_PATH="/n/home12/thb489/continual-learning/myenv"
+
+# Set working directory explicitly
+cd ${MAIN_PATH}
+
+# Activate the virtual environment
+source "${VENV_PATH}/bin/activate"
+
+# Run class balanced training and evaluation
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/class_balanced/config_cifar10_grad_eval.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/class_balanced/config_cifar10_train.yaml
+
+# Run k-means training and evaluation
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/kmeans/config_cifar10_grad_eval.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/kmeans/config_cifar10_train.yaml
+
+# Run GSS training and evaluation
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/GSS/config_cifar10_grad_eval.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/GSS/config_cifar10_train.yaml
+
+# # Run iCaRL training and evaluation
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_cifar10_grad_eval.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_cifar10_train.yaml
+
+# Run random training and evaluation
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/random/config_cifar10_grad_eval.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/random/config_cifar10_train.yaml
+
+# # # Run lambda training and evaluation
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/lambda/config_cifar10_grad_eval.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/lambda/config_cifar10_train.yaml
+
+
+
+# # # Run additional script for saving similarity blocks
+python ${MAIN_PATH}/save_similarity_block_v2.py --config ${MAIN_PATH}/configs/grad_eval/cifar10_random.yaml

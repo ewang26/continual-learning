@@ -1,0 +1,11 @@
+metric_names: ['Cosine Similarity']
+p_vals: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
+#p_vals: [0.001, 0.5]
+model_weight_types: ['weight', 'bias']
+model_layer_names: ['grad_conv_block.0', 'grad_conv_block.2', 'grad_conv_block.5', 'grad_conv_block.7', 'grad_linear_block.0', 'grad_out_block']
+dataset_name: 'cifar10_split'
+grad_type_arr: ['past']
+memory_method_arr: ['class_balanced', 'kmeans']
+num_tasks: 5
+num_ideal_models: 10
+num_runs: 10

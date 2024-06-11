@@ -1,0 +1,64 @@
+# WandB stuff, change according to user
+use_wandb: False
+wandb_project_name: continuallearning
+wandb_profile: erikwang
+
+
+# Memory set hyperparameters
+memory_set_manager: iCaRL
+use_memory_set: True
+grad_type: ['past'] # can do 'past' or 'present'
+p: dummar_var
+use_random_img: False
+num_ideal_models: 10
+#num_samples: 10
+
+# for gradient evaluating
+# p_arr: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
+# num_samples: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+
+p_arr: [ 0.5, 1]
+num_samples: [8, 10]
+
+
+#debugging 
+train_debug: False
+
+#training
+#p_arr: [1]
+#num_samples: [10] # if training, use only 1 sample
+
+# Continual learning hyperparameters
+# learning_manager: mnist_split
+learning_manager: cifar10_split
+
+# Training hyperparameters
+lr: 0.001
+batch_size: 256
+random_seed: 0xC0FFEE
+epochs: 50
+#epochs: 30
+
+# Model arch 
+# model:
+#  type: mlp 
+#  params: 
+#    sizes: [784, 100, 10] 
+#    acts: [relu]
+
+#Example CNN
+model: 
+  type: cnn
+  params: 
+    in_channels: 3 
+    out_channels: 10
+    l1_out_channels: 32
+    l2_out_channels: 32
+    l3_out_channels: 64
+    l4_out_channels: 64
+
+
+#model_save_dir: models/mnist_split #/1/
+#model_save_dir: models/cifar10_split
+# model_load_dir: models/mnist_split
+model_load_dir: models/cifar10_split

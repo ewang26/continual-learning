@@ -1,0 +1,22 @@
+#!/bin/bash
+#SBATCH -n 1
+#SBATCH -N 1
+#SBATCH -p gpu
+#SBATCH -t 3-00:00
+#SBATCH --mem=10000
+#SBATCH --gres=gpu:1
+#SBATCH --job-name=continual_learning
+#SBATCH -o logs/train_eval_%j.out
+#SBATCH -e logs/train_eval_%j.err
+
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+
+MAIN_PATH=/n/home12/thb489/continual-learning
+VENV_PATH=/n/home12/thb489/continual-learning
+
+source activate $VENV_PATH
+
+python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/test/config_mnist_grad_eval.yaml
+python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/test/config_mnist_train.yaml
+
+#python ${MAIN_PATH}/save_similarity_block_v2.py --config ${MAIN_PATH}/configs/grad_eval/mnist_rest.yaml
