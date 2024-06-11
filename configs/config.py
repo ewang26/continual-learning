@@ -1,4 +1,5 @@
 from typing import Dict, Union
+
 from data import RandomMemorySetManager, KMeansMemorySetManager, LambdaMemorySetManager, \
     GSSMemorySetManager, ClassBalancedReservoirSampling, iCaRL
 from managers import (
