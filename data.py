@@ -615,8 +615,6 @@ class ClassBalancedReservoirSampling:
 
 
 # Hyper Parameters
-# num_epochs = 50
-
 num_epochs = 50
 batch_size = 64
 learning_rate = 0.002
@@ -642,7 +640,6 @@ class iCaRLNet(nn.Module):
         # with shape (N, C, H, W)
         self.exemplar_sets = []
         self.exemplar_labels = []
-        # self.total_data = [[x, y] for x, y in zip(self.exemplar_sets, self.exemplar_labels)]
         self.total_data = []
 
         # Learning method
@@ -674,29 +671,7 @@ class iCaRLNet(nn.Module):
         self.fc = nn.Linear(in_features, out_features+n, bias=False)
         self.fc.weight.data[:out_features] = weight
         self.n_classes += n
-
-    def classify(self, x, transform):
-        batch_size = x.size(0)
-        if self.compute_means:
-            exemplar_means = []
-            with torch.no_grad():
-                for P_y in self.exemplar_sets:
-                    features = [self.feature_extractor(transform(Image.fromarray(ex)).unsqueeze(0)).squeeze().detach() / self.feature_extractor(transform(Image.fromarray(ex)).unsqueeze(0)).squeeze().detach().norm() for ex in P_y]
-                    mu_y = torch.stack(features).mean(0).squeeze() / torch.stack(features).mean(0).squeeze().norm()
-                    exemplar_means.append(mu_y)
-            self.exemplar_means = exemplar_means
-            self.compute_means = False
-            print("Done")
-
-        exemplar_means = torch.stack(self.exemplar_means)
-        means = torch.stack([exemplar_means] * batch_size)
-        means = means.transpose(1, 2)
-        feature = self.feature_extractor(x)
-        feature = feature.unsqueeze(2).expand_as(means)
-        dists = (feature - means).pow(2).sum(1).squeeze()
-        _, preds = dists.min(1)
-        return preds
-
+        
 
     def construct_exemplar_set(self, images, labels, m, transform):
         """Construct an exemplar set for image set
@@ -725,34 +700,43 @@ class iCaRLNet(nn.Module):
 
                 # Extract features
                 feature = self.feature_extractor(img).cpu().numpy()
-                feature = feature / np.linalg.norm(feature)  # Normalize
+                feature_norm = np.linalg.norm(feature)
+                feature = feature / feature_norm  # Normalize
                 features.append(feature[0])
 
         features = np.array(features)
         class_mean = np.mean(features, axis=0)
-        class_mean = class_mean / np.linalg.norm(class_mean) # normalize
+        class_mean_norm = np.linalg.norm(class_mean)
+        class_mean = class_mean / class_mean_norm # normalize
 
         exemplar_set = []
         exemplar_label = []
         exemplar_features = [] # list of Variables of shape (feature_size,)
-        for k in range(m):
-            S = np.sum(exemplar_features, axis=0)
-            phi = features
-            mu = class_mean
-            mu_p = 1.0/(k+1) * (phi + S)
-            mu_p = mu_p / np.linalg.norm(mu_p)
-            i = np.argmin(np.sqrt(np.sum((mu - mu_p) ** 2, axis=1)))
+        sum_inner = torch.zeros_like(class_mean).to(DEVICE) # base case for when there are no exemplars yet (k=0)
 
-            exemplar_set.append(images[i])
-            exemplar_features.append(features[i])
-            exemplar_label.append(labels[i])
-            """
-            #features = np.delete(features, i, axis=0)
-            """
-        
-        self.exemplar_labels.append(np.array(exemplar_label))
-        self.exemplar_sets.append(np.array(exemplar_set)) # this is exemplar_sets, not the exemplar_set being constructed here
-                
+        for k in range(m):
+            min_val = float('inf')
+            arg_min_i = None
+
+            for i, feature_x in enumerate(features): # this loop simulates the argmin process
+  
+                coefficient = 1/(k+1)
+                sum_outer = feature_x + sum_inner
+                sum_outer = coefficient * sum_outer
+
+                normed_val = torch.linalg.norm(class_mean - sum_outer)
+
+                if normed_val < min_val:
+                    min_val = normed_val
+                    arg_min_i = i
+
+            exemplar_set.append(images[arg_min_i])
+            exemplar_features.append(features[arg_min_i])
+            exemplar_label.append(labels[arg_min_i])
+
+            print(f"Shape of exemplar_features is: {torch.stack(exemplar_features).shape}")
+            sum_inner = sum_inner.squeeze() + torch.stack(exemplar_features).sum(0)
+
 
     def reduce_exemplar_sets(self, m):
         for y, P_y in enumerate(self.exemplar_sets):
@@ -762,11 +746,6 @@ class iCaRLNet(nn.Module):
     def combine_dataset_with_exemplars(self):
         for y, P_y in enumerate(self.exemplar_sets):
             self.total_data = [[x, y] for x, y in zip(self.exemplar_sets, self.exemplar_labels)]
-
-        # for y, P_y in enumerate(self.exemplar_sets):
-        #     exemplar_images = P_y
-        #     exemplar_labels = [y] * len(P_y)
-        #     dataset.append(exemplar_images, exemplar_labels)
 
 
     def update_representation(self, x, y):
@@ -782,19 +761,18 @@ class iCaRLNet(nn.Module):
         print(f"{len(new_classes)} new classes.")
 
         self.combine_dataset_with_exemplars()
-        # print(f"x shape during update is {x.shape}")
         if self.total_data:
-            print("if is true")
             exemplar_xs, exemplar_ys = zip(*self.total_data)
+
             # ensure all elements are tensors
-            exemplar_xs = [torch.tensor(item, dtype=x.dtype, device=x.device) if not isinstance(item, torch.Tensor) else item for item in exemplar_xs]
-            exemplar_ys = [torch.tensor(item, dtype=y.dtype, device=y.device) if not isinstance(item, torch.Tensor) else item for item in exemplar_ys]
+            exemplar_xs = [torch.tensor(item, dtype=x.dtype, device=x.device) if not torch.is_tensor(item) else item for item in exemplar_xs]
+            exemplar_ys = [torch.tensor(item, dtype=y.dtype, device=y.device) if not torch.is_tensor(item) else item for item in exemplar_ys]
+            
             # stack tensors to maintain consistent dimensions for concatenation
             exemplar_xs = torch.stack(exemplar_xs)
             exemplar_ys = torch.stack(exemplar_ys)
         else:
-            print("else is true")
-            # initialize exemplar_xs and exemplar_ys as empty 2D tensors matching the dimension of x and y
+            # initialize exemplar_xs and exemplar_ys as empty tensors with the remaining dimensions according to x and y
             exemplar_xs = torch.empty((0, *x.shape[1:]), dtype=x.dtype, device=x.device)
             exemplar_ys = torch.empty((0, *y.shape[1:]), dtype=y.dtype, device=y.device)
             
@@ -813,7 +791,6 @@ class iCaRLNet(nn.Module):
             num_images = exemplar_xs.size(0) * exemplar_xs.size(1) # the total number of images
             num_labels = exemplar_ys.size(0) * exemplar_ys.size(1)
 
-
             if exemplar_xs.size(-1) == 32:
                 all_xs = torch.cat([exemplar_xs.reshape(num_images, 3, 32, 32), x], dim=0)
                 all_ys = torch.cat([exemplar_ys.reshape(num_labels), y], dim=0)
@@ -831,23 +808,15 @@ class iCaRLNet(nn.Module):
             for idx, (images, labels) in enumerate(loader):
 
                 if images.dim() == 2:
-                    # x = x.unsqueeze(1) 
-                    # x = x.unsqueeze(0).unsqueeze(0)  # add batch dimension and channel dimension, now (1, 1, height, width)
                     images = images.view(-1, 1, 28, 28)
                     images = self.grayscale_to_rgb(images)
+                    assert images.shape[1] == 3 # asserting that the images now have three color channels
 
-                # if images.size(1) == 1:
-                #     images = self.grayscale_to_rgb(images)
                 g = torch.sigmoid(self.forward(images))
 
                 start_index = idx * loader.batch_size
                 end_index = start_index + images.size(0)
-                # print(f"images.size after reshape is {images.shape}")
-                # print(f"start_index {start_index}, end index {end_index}")
-                # print(f"start_index is {start_index}")
-                # print(f"q has length {q.size()}")
                 q[start_index:end_index] = g.data
-
 
         optimizer = self.optimizer
 
@@ -859,10 +828,9 @@ class iCaRLNet(nn.Module):
                 optimizer.zero_grad()
 
                 if images.dim() == 2:
-                    # x = x.unsqueeze(1) 
-                    # x = x.unsqueeze(0).unsqueeze(0)  # add batch dimension and channel dimension, now (1, 1, height, width)
                     images = images.view(-1, 1, 28, 28)
                     images = self.grayscale_to_rgb(images)
+                    assert images.shape[1] == 3
 
                 g = self.forward(images)
 
