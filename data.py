@@ -43,6 +43,7 @@ else:
     DEVICE = torch.device("cpu")
 
 # DEVICE = torch.device("mps") # change this before cluster!
+torch.autograd.set_detect_anomaly(True)
 
 
 class MemorySetManager(ABC):
@@ -656,9 +657,11 @@ class iCaRLNet(nn.Module):
         self.compute_means = True
         self.exemplar_means = []
 
+    # pass in weights: def forward(self, x, weight=None):
     def forward(self, x):
         # print(f"during forward, x shape is: {x.shape}")
         # breakpoint()
+        #WP: let's get the forward function to be able to take in a set of weights
         x = self.feature_extractor(x)
         x = self.bn(x)
         x = self.ReLU(x)
@@ -669,10 +672,16 @@ class iCaRLNet(nn.Module):
         """Add n classes in the final fc layer"""
         in_features = self.fc.in_features
         out_features = self.fc.out_features
+        #WP: don't forget the biases: self.fc.bias.data
         weight = self.fc.weight.data
+        # biases = self.fc.bias.data
 
+        #WP: check that adding the new heads is correct (i.e. why bias=False)
+        # self.fc = nn.Linear(in_features, out_features+n)
+        # self.fc.bias.data[:out_features] = biases
         self.fc = nn.Linear(in_features, out_features+n, bias=False)
         self.fc.weight.data[:out_features] = weight
+
         self.n_classes += n
 
 
@@ -744,6 +753,7 @@ class iCaRLNet(nn.Module):
         # Identify and increment classes
         unique_classes = set(y.cpu().numpy().tolist())
         new_classes = [cls for cls in unique_classes if cls >= self.n_classes]
+
         self.increment_classes(len(new_classes))
         self.to(DEVICE)
         print(f"{len(new_classes)} new classes.")
@@ -819,28 +829,42 @@ class iCaRLNet(nn.Module):
 
         else:
             # icarl loss
-            q = self.forward(all_xs)
+            old_weights = self.state_dict()
+            # instead of doing q here
             for epoch in range(num_epochs):
                 for batch_xs, batch_ys in all_dataloader:
                     optimizer.zero_grad()
+                    # let's compute q for this batch
+                    # first save the current networks weight after gradient update
+                    curr_weight = self.state_dict()
+                    # now we set network weight to old weights
+                    self.load_state_dict(old_weights)
+                    # now we compute the forward function with old weights
+                    q_batch = self.forward(batch_xs)
+                    # finally put back the current weights
+                    self.load_state_dict(curr_weight)
                     g = self.forward(batch_xs)
-                    one_hot_labels = F.one_hot(batch_ys, self.n_classes)
+                    one_hot = F.one_hot(batch_ys, self.n_classes)
+                    one_hot_labels = one_hot.clone().float()
+
                     loss_new = 0
                     loss_old = 0
                     criterion = nn.BCELoss()
 
                     for cls in range(self.n_known, self.n_classes):
-                        loss_new += criterion(g, one_hot_labels[:,cls])
+                        # breakpoint()
+                        loss_new += criterion(g[:,cls+1], one_hot_labels[:,cls])
                         
                     for cls in range(0, self.n_known):
-                        loss_old += criterion(g, q[:,cls])
+                        loss_old += criterion(g[:,cls+1], q_batch[:,cls])
                     
+                    # loss_new.backward()
                     loss_total = loss_new + loss_old
-                    loss_total.backward()
+                    # loss_new.backward()
+                    # loss_old.backward()
                     optimizer.step()
 
         self.n_known += len(new_classes)
-
 
 class iCaRL(MemorySetManager):
     def __init__(self,  p: float, n_classes: int, random_seed: int = 42):
@@ -876,7 +900,7 @@ class iCaRL(MemorySetManager):
 
         print(f"\nReshaped x has size: {x.shape}")
 
-        self.net.update_representation(x, y, self.p, "replay")  # update the model with new data
+        self.net.update_representation(x, y, self.p, "icarl")  # update the model with new data
 
         print("updated representation")
 
