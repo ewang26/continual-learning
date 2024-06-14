@@ -8,7 +8,11 @@ import torchvision.transforms as transforms
 from jaxtyping import Float
 from torch.utils.data import random_split
 from torch.utils.data.dataset import Dataset as TorchDataset
+from torch.utils.data import TensorDataset, DataLoader
 from sklearn.cluster import KMeans
+import pdb
+# pdb.set_trace()
+
 
 import numpy as np
 
@@ -615,7 +619,7 @@ class ClassBalancedReservoirSampling:
 
 
 # Hyper Parameters
-num_epochs = 50
+num_epochs = 1
 batch_size = 64
 learning_rate = 0.002
 
@@ -628,11 +632,9 @@ class iCaRLNet(nn.Module):
         self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
         self.ReLU = nn.ReLU()
         self.fc = nn.Linear(feature_size, n_classes, bias=False)
-
         self.grayscale_to_rgb = transforms.Compose([transforms.Lambda(lambda x: torch.cat([x, x, x], dim=1))])
 
-
-        self.n_classes = n_classes
+        self.n_classes = 0
         self.n_known = 0
 
         # list containing exemplar_sets
@@ -643,7 +645,7 @@ class iCaRLNet(nn.Module):
         self.total_data = []
 
         # Learning method
-        self.cls_loss = nn.CrossEntropyLoss()
+        self.cls_loss = nn.BCELoss()
         self.dist_loss = nn.BCELoss()
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate,
                                     weight_decay=0.00001)
@@ -656,6 +658,7 @@ class iCaRLNet(nn.Module):
 
     def forward(self, x):
         # print(f"during forward, x shape is: {x.shape}")
+        # breakpoint()
         x = self.feature_extractor(x)
         x = self.bn(x)
         x = self.ReLU(x)
@@ -671,7 +674,7 @@ class iCaRLNet(nn.Module):
         self.fc = nn.Linear(in_features, out_features+n, bias=False)
         self.fc.weight.data[:out_features] = weight
         self.n_classes += n
-        
+
 
     def construct_exemplar_set(self, images, labels, m, transform):
         """Construct an exemplar set for image set
@@ -682,31 +685,18 @@ class iCaRLNet(nn.Module):
 
         features = []
         self.feature_extractor.eval()
-        with torch.no_grad():  # Ensures no gradients are calculated
-            # for i, img in enumerate(images):
-            for img in images:
-                
-                # print(f"before checking image dim: {img.shape}")
-                if img.dim() == 3:  # Check if the channel dimension is missing
-                    img = img.unsqueeze(0)  # Add a batch dimension if it's a single image
-                img = img.to(DEVICE)
-                
-                if img.dim() == 1: # If it's mnist, it is just 784 flattened
-                    img = img.view(1, 1, 28, 28) # add the color channel and reshape
-                    img = self.grayscale_to_rgb(img)
+        with torch.no_grad():  
+            images = images.to(DEVICE)
+            features = self.feature_extractor(images)  # Shape [n_images, feature_dim]
+            # breakpoint()
+            norms = torch.norm(features, dim=1, keepdim=True)  # Shape [n_images, 1]
+            normalized_features = features / norms  # broadcasting the division. will have shape [12665, 2048]
 
-                # print(f"img dimension is: {img.shape}")
-                img = transform(img)  # Apply transformation
-
-                # Extract features
-                feature = self.feature_extractor(img).cpu().numpy()
-                feature_norm = np.linalg.norm(feature)
-                feature = feature / feature_norm  # Normalize
-                features.append(feature[0])
-
-        features = np.array(features)
-        class_mean = np.mean(features, axis=0)
-        class_mean_norm = np.linalg.norm(class_mean)
+            features = normalized_features[:, 0] # This will have shape [12665]
+        
+        features = torch.tensor(features).to(DEVICE) 
+        class_mean = torch.mean(features, axis=0)  
+        class_mean_norm = torch.linalg.norm(class_mean) # Do I need to compute the norm of this? class_mean will be a scalar
         class_mean = class_mean / class_mean_norm # normalize
 
         exemplar_set = []
@@ -730,6 +720,7 @@ class iCaRLNet(nn.Module):
                     min_val = normed_val
                     arg_min_i = i
 
+            # breakpoint()
             exemplar_set.append(images[arg_min_i])
             exemplar_features.append(features[arg_min_i])
             exemplar_label.append(labels[arg_min_i])
@@ -737,18 +728,19 @@ class iCaRLNet(nn.Module):
             print(f"Shape of exemplar_features is: {torch.stack(exemplar_features).shape}")
             sum_inner = sum_inner.squeeze() + torch.stack(exemplar_features).sum(0)
 
+        self.exemplar_sets.append(torch.stack(exemplar_set)) # self.exemplar_sets should be a list of tensors
+        self.exemplar_labels.append(torch.stack(exemplar_label))
 
     def reduce_exemplar_sets(self, m):
         for y, P_y in enumerate(self.exemplar_sets):
             self.exemplar_sets[y] = P_y[:m]
 
 
-    def combine_dataset_with_exemplars(self):
-        for y, P_y in enumerate(self.exemplar_sets):
-            self.total_data = [[x, y] for x, y in zip(self.exemplar_sets, self.exemplar_labels)]
+    def combine_exemplar_sets(self):
+        self.total_data = [[x, y] for x, y in zip(self.exemplar_sets, self.exemplar_labels)]
 
 
-    def update_representation(self, x, y):
+    def update_representation(self, x, y, p, loss_type):
         """Update the network representation using a tensor of images (x) and their corresponding labels (y)."""
         self.compute_means = True
         x, y = x.to(DEVICE), y.to(DEVICE)
@@ -760,91 +752,97 @@ class iCaRLNet(nn.Module):
         self.to(DEVICE)
         print(f"{len(new_classes)} new classes.")
 
-        self.combine_dataset_with_exemplars()
-        if self.total_data:
-            exemplar_xs, exemplar_ys = zip(*self.total_data)
+        self.combine_exemplar_sets()
+        
+        if self.total_data: # if the exemplar sets are not empty
+            print("\nnot empty")
+            exemplar_xs = torch.cat(self.exemplar_sets, dim=0)
+            exemplar_ys = torch.cat(self.exemplar_labels, dim=0).to(DEVICE)
 
-            # ensure all elements are tensors
-            exemplar_xs = [torch.tensor(item, dtype=x.dtype, device=x.device) if not torch.is_tensor(item) else item for item in exemplar_xs]
-            exemplar_ys = [torch.tensor(item, dtype=y.dtype, device=y.device) if not torch.is_tensor(item) else item for item in exemplar_ys]
-            
-            # stack tensors to maintain consistent dimensions for concatenation
-            exemplar_xs = torch.stack(exemplar_xs)
-            exemplar_ys = torch.stack(exemplar_ys)
-        else:
+        else: # if the exemplar sets are not empty
             # initialize exemplar_xs and exemplar_ys as empty tensors with the remaining dimensions according to x and y
             exemplar_xs = torch.empty((0, *x.shape[1:]), dtype=x.dtype, device=x.device)
             exemplar_ys = torch.empty((0, *y.shape[1:]), dtype=y.dtype, device=y.device)
-            
+        
+        # concatenate memory and task data
+        all_xs = torch.cat((exemplar_xs, x), dim=0)
+        all_ys = torch.cat((exemplar_ys, y), dim=0)
 
-        # concatenate tensors
         print(f"exemplar_xs shape is {exemplar_xs.shape}, x shape is {x.shape}")
         print(f"exemplar_ys shape is {exemplar_ys.shape}, y shape during update is {y.shape}")
 
-        if exemplar_xs.size(0) == 0 and exemplar_ys.size(0) == 0:
-
-            print("exemplar start is empty (starting)")
-            all_ys = torch.cat([exemplar_ys, y], dim=0)
-            all_xs = torch.cat([exemplar_xs, x], dim=0) 
-        else:
-            print(f"exemplar set is not empty; it has size {exemplar_xs.shape}")
-            num_images = exemplar_xs.size(0) * exemplar_xs.size(1) # the total number of images
-            num_labels = exemplar_ys.size(0) * exemplar_ys.size(1)
-
-            if exemplar_xs.size(-1) == 32:
-                all_xs = torch.cat([exemplar_xs.reshape(num_images, 3, 32, 32), x], dim=0)
-                all_ys = torch.cat([exemplar_ys.reshape(num_labels), y], dim=0)
-            elif exemplar_xs.size(-1) == 784:
-                all_xs = torch.cat([exemplar_xs.reshape(num_images, 784), x], dim=0)
-                all_ys = torch.cat([exemplar_ys.reshape(num_labels), y], dim=0)
-
-
+        print(f"all_xs shape: {all_xs.shape}")
         combined_dataset = torch.utils.data.TensorDataset(all_xs, all_ys)
-        loader = torch.utils.data.DataLoader(combined_dataset, batch_size=batch_size, shuffle=True)
+        combined_loader = torch.utils.data.DataLoader(combined_dataset, batch_size=batch_size, shuffle=True)
 
-        # store network outputs with pre-update parameters
-        q = torch.zeros(len(combined_dataset), self.n_classes)
-        with torch.no_grad():
-            for idx, (images, labels) in enumerate(loader):
+        print(f"Shapes are: {all_xs.shape}, {all_ys.shape}")
+        print(exemplar_xs.shape)
 
-                if images.dim() == 2:
-                    images = images.view(-1, 1, 28, 28)
-                    images = self.grayscale_to_rgb(images)
-                    assert images.shape[1] == 3 # asserting that the images now have three color channels
+        all_dataset = TensorDataset(all_xs, all_ys)
+        all_dataloader = DataLoader(all_dataset, batch_size=batch_size, shuffle=True) # batch_size = 64
 
-                g = torch.sigmoid(self.forward(images))
-
-                start_index = idx * loader.batch_size
-                end_index = start_index + images.size(0)
-                q[start_index:end_index] = g.data
+        exemplar_dataloader = None
+        if exemplar_xs.size(0) > 0: 
+            exemplar_dataset = TensorDataset(exemplar_xs, exemplar_ys)
+            exemplar_dataloader = DataLoader(exemplar_dataset, batch_size=batch_size, shuffle=True)
 
         optimizer = self.optimizer
 
         # network training
-        for epoch in range(num_epochs):
-            print(f"epoch is {epoch}")
-            for idx, (images, labels) in enumerate(loader):
-                images, labels = images.to(DEVICE), labels.to(DEVICE)
-                optimizer.zero_grad()
+        if loss_type == "replay": # replay loss
+            if exemplar_dataloader:
+                for epoch in range(num_epochs):
+                    print(f"epoch is {epoch}")
+                    for (batch_ex_xs, batch_ex_ys), (batch_xs, batch_ys) in zip(exemplar_dataloader, all_dataloader):
+                        optimizer.zero_grad()  # Clear gradients before each backward pass
+        
+                        g_task = self.forward(batch_xs)  # Get predictions
+                        loss_task = nn.CrossEntropyLoss()(g_task, batch_ys)  # Compute loss
 
-                if images.dim() == 2:
-                    images = images.view(-1, 1, 28, 28)
-                    images = self.grayscale_to_rgb(images)
-                    assert images.shape[1] == 3
+                        g_exemplar = self.forward(batch_ex_xs)
+                        loss_exemplar = 1/p * nn.CrossEntropyLoss()(g_exemplar, batch_ex_ys)
 
-                g = self.forward(images)
+                        loss = loss_task + loss_exemplar
 
-                # classification loss for new classes
-                loss = self.cls_loss(g, labels)
-                # distillation loss for old classes
-                if self.n_known > 0:
-                    g = torch.sigmoid(g)
-                    q_i = q[idx]
-                    dist_loss = sum(self.dist_loss(g[:, y], q_i[:, y]) for y in range(self.n_known))
-                    loss += dist_loss
+                        loss.backward()  # Backpropagate the loss
+                        optimizer.step()  # Update weights
+            else:
+                for epoch in range(num_epochs):
+                    print(f"epoch is {epoch}")
+                    for batch_xs, batch_ys in all_dataloader:
+                        optimizer.zero_grad()  # Clear gradients before each backward pass
+        
+                        g_task = self.forward(batch_xs)  # Get predictions
+                        loss_task = nn.CrossEntropyLoss()(g_task, batch_ys)  # Compute loss
 
-                loss.backward()
-                optimizer.step()
+                        loss = loss_task
+
+                        loss.backward()  # Backpropagate the loss
+                        optimizer.step()  # Update weights
+
+
+        else:
+            # icarl loss
+            for epoch in range(num_epochs):
+                for batch_xs, batch_ys in dataloader:
+                    optimizer.zero_grad()
+                    q = self.forward(batch_xs)
+                    one_hot_labels = F.one_hot(batch_ys, self.n_classes)
+                    loss_new = 0
+                    loss_old = 0
+                    criterion = nn.BCELoss()
+                    # breakpoint()
+                    for cls in range(self.n_known, self.n_classes):
+                        loss_new += criterion(one_hot_labels[:,cls], batch_ys)
+                    for cls in range(0, self.n_known):
+                        loss_old += criterion(q[:,cls], batch_ys)
+                    
+                    loss_total = loss_new + loss_old
+                    loss_total.backward()
+                    optimizer.step()
+
+        self.n_known += len(new_classes)
+
 
 class iCaRL(MemorySetManager):
     def __init__(self,  p: float, n_classes: int, random_seed: int = 42):
@@ -864,22 +862,33 @@ class iCaRL(MemorySetManager):
         transform_test = transforms.Compose([
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-        if self.first_task:
-            self.memory_set_size = int(self.p * len(x))
+        # set the memory set size according to the size of the first task
+        # MNIST has variable task sizes, so always use the first task size
+        if self.first_task: 
+            self.memory_set_size = int(self.p * len(x)) 
             print(f"memory set size is {self.memory_set_size}")
 
-        self.net.update_representation(x, y)  # update the model with new data
 
-        print("updated memory sets")
+        if x.dim() == 2: # only reshape and duplicate color channel if MNIST
+            x = x.view(-1, 28, 28)
+            x = x.unsqueeze(1).repeat(1, 3, 1, 1)
+        
+        if x.dim() == 3:
+            x = x.unsqueeze(1)
+
+        print(f"\nReshaped x has size: {x.shape}")
+
+        self.net.update_representation(x, y, self.p, "replay")  # update the model with new data
+
+        print("updated representation")
 
         self.net.construct_exemplar_set(x, y, self.memory_set_size, transform_test)  # update the exemplar set for the new class
         # print(f"shape of memory set after construction is: {np.array(self.net.exemplar_sets).shape}")
-        print(f"shape of memory set after construction is: {torch.tensor(self.net.exemplar_sets[-1]).shape}")
+        print(f"memory set after construction is: {self.net.exemplar_sets[-1].shape}")
+
         print("constructed the new memory set")
         
         self.first_task = False
 
-        return torch.tensor(self.net.exemplar_sets[-1]), torch.tensor(self.net.exemplar_labels[-1])
-        # return self.net.exemplar_sets[-1], self.net.exemplar_labels[-1] # should return the last image set in the memory set
-        # does I need to return a tensor?
-        ## and their corresponding labels
+        return self.net.exemplar_sets[-1], self.net.exemplar_labels[-1]
+        # should these be tensors?
