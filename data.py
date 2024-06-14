@@ -731,10 +731,6 @@ class iCaRLNet(nn.Module):
         self.exemplar_sets.append(torch.stack(exemplar_set)) # self.exemplar_sets should be a list of tensors
         self.exemplar_labels.append(torch.stack(exemplar_label))
 
-    def reduce_exemplar_sets(self, m):
-        for y, P_y in enumerate(self.exemplar_sets):
-            self.exemplar_sets[y] = P_y[:m]
-
 
     def combine_exemplar_sets(self):
         self.total_data = [[x, y] for x, y in zip(self.exemplar_sets, self.exemplar_labels)]
@@ -823,19 +819,21 @@ class iCaRLNet(nn.Module):
 
         else:
             # icarl loss
+            q = self.forward(all_xs)
             for epoch in range(num_epochs):
-                for batch_xs, batch_ys in dataloader:
+                for batch_xs, batch_ys in all_dataloader:
                     optimizer.zero_grad()
-                    q = self.forward(batch_xs)
+                    g = self.forward(batch_xs)
                     one_hot_labels = F.one_hot(batch_ys, self.n_classes)
                     loss_new = 0
                     loss_old = 0
                     criterion = nn.BCELoss()
-                    # breakpoint()
+
                     for cls in range(self.n_known, self.n_classes):
-                        loss_new += criterion(one_hot_labels[:,cls], batch_ys)
+                        loss_new += criterion(g, one_hot_labels[:,cls])
+                        
                     for cls in range(0, self.n_known):
-                        loss_old += criterion(q[:,cls], batch_ys)
+                        loss_old += criterion(g, q[:,cls])
                     
                     loss_total = loss_new + loss_old
                     loss_total.backward()
