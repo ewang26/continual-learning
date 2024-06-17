@@ -840,10 +840,10 @@ class iCaRLNet(nn.Module):
                     # now we set network weight to old weights
                     self.load_state_dict(old_weights)
                     # now we compute the forward function with old weights
-                    q_batch = self.forward(batch_xs)
+                    q_batch = torch.sigmoid(self.forward(batch_xs)).detach()
                     # finally put back the current weights
                     self.load_state_dict(curr_weight)
-                    g = self.forward(batch_xs)
+                    g = torch.sigmoid(self.forward(batch_xs))
                     one_hot = F.one_hot(batch_ys, self.n_classes)
                     one_hot_labels = one_hot.clone().float()
 
@@ -852,16 +852,14 @@ class iCaRLNet(nn.Module):
                     criterion = nn.BCELoss()
 
                     for cls in range(self.n_known, self.n_classes):
-                        # breakpoint()
                         loss_new += criterion(g[:,cls+1], one_hot_labels[:,cls])
-                        
+                    
                     for cls in range(0, self.n_known):
                         loss_old += criterion(g[:,cls+1], q_batch[:,cls])
                     
-                    # loss_new.backward()
                     loss_total = loss_new + loss_old
-                    # loss_new.backward()
-                    # loss_old.backward()
+                    loss_total.backward()
+
                     optimizer.step()
 
         self.n_known += len(new_classes)
