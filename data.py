@@ -632,7 +632,7 @@ class iCaRLNet(nn.Module):
         self.feature_extractor.fc = nn.Linear(self.feature_extractor.fc.in_features, feature_size)
         self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
         self.ReLU = nn.ReLU()
-        self.fc = nn.Linear(feature_size, n_classes, bias=False)
+        self.fc = nn.Linear(feature_size, n_classes)
         self.grayscale_to_rgb = transforms.Compose([transforms.Lambda(lambda x: torch.cat([x, x, x], dim=1))])
 
         self.n_classes = 0
@@ -674,13 +674,14 @@ class iCaRLNet(nn.Module):
         out_features = self.fc.out_features
         #WP: don't forget the biases: self.fc.bias.data
         weight = self.fc.weight.data
-        # biases = self.fc.bias.data
+        bias = self.fc.bias.data
 
         #WP: check that adding the new heads is correct (i.e. why bias=False)
         # self.fc = nn.Linear(in_features, out_features+n)
         # self.fc.bias.data[:out_features] = biases
-        self.fc = nn.Linear(in_features, out_features+n, bias=False)
+        self.fc = nn.Linear(in_features, out_features+n)
         self.fc.weight.data[:out_features] = weight
+        self.fc.bias.data[:out_features] = bias
 
         self.n_classes += n
 
