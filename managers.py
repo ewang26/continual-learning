@@ -304,7 +304,7 @@ class ContinualLearningManager(ABC):
             if not (p == 1):
                 print ("IN UPDATE FUNCTION")
                 terminal_train_dataloader = self._get_terminal_task_dataloader(full_batch=True)
-                criterion = nn.CrossEntropyLoss()
+                #criterion = nn.CrossEntropyLoss()
                 current_labels: List[int] = list(self._get_current_labels())
                 model = model.to(DEVICE)
 
@@ -312,7 +312,7 @@ class ContinualLearningManager(ABC):
                 for batch_x, batch_y in terminal_train_dataloader:
                     
                     # batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-                    grad_sample = self.get_forward_pass_gradients(batch_x, batch_y, model, criterion, current_labels)
+                    #grad_sample = self.get_forward_pass_gradients(batch_x, batch_y, model, criterion, current_labels)
                     # self.update_reservoir(batch_x, batch_y)
 
                     batch_x.requires_grad=True
@@ -322,10 +322,10 @@ class ContinualLearningManager(ABC):
 
                     print("before update")
                     # print(f"model is {model.conv_block[4].return_indices}")
-                    self.update_memory_gcr(batch_x, batch_y, grad_sample, model)
+                    self.update_memory_gcr(batch_x, batch_y, model)
                     print("after update")
 
-    def update_memory_gcr(self, batch_x, batch_y, grad_sample, model):       
+    def update_memory_gcr(self, batch_x, batch_y, model):       
         # 2 classes for MNIST and CIFAR10 only
         Y = 2
 
@@ -412,7 +412,9 @@ class ContinualLearningManager(ABC):
         # Update the memory set with the selected subset and weights
         self.tasks[self.task_index].memory_x = memory_x
         self.tasks[self.task_index].memory_y = memory_y.long()
-        self.tasks[self.task_index].memory_set_weights = memory_weights
+        #self.tasks[self.task_index].memory_set_weights = memory_weights
+        self.tasks[self.task_index].update_memory_set_weights(memory_weights)
+
         print("outside of train")
         print(f"Number of memory set weights: {len(self.tasks[self.task_index].memory_set_weights)}")
         print(f"Memory set weights: {self.tasks[self.task_index].memory_set_weights}")
@@ -841,18 +843,21 @@ class ContinualLearningManager(ABC):
         #create label weights
 
         print("IN TRAIN")
-        print(f"Number of memory set weights: {len(self.tasks[self.task_index].memory_set_weights)}")
-        print(f"Memory set weights: {self.tasks[self.task_index].memory_set_weights}")
+        # print(f"Number of memory set weights: {len(self.tasks[self.task_index].memory_set_weights)}")
+        # print(f"Memory set weights: {self.tasks[self.task_index].memory_set_weights}")
 
+        print(f"first memory set weights in TRAIN:{self.tasks[0].get_memory_set_weights()}")
+        print(f"latest memory set weights in TRAIN:{self.tasks[self.task_index - 1].get_memory_set_weights()}")
         if use_weights:
             label_weights = np.ones(len(current_labels))
             label_weights[:-1] = 1/p
             label_weights = torch.from_numpy(label_weights).float().to(DEVICE)
 
-            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+            if self.memory_set_manager.__class__.__name__ != "GCRMemorySetManager":
                 #memory_set_weights = torch.ones(len(train_dataloader.dataset)).to(DEVICE)
                 # print(f"Label weights: {label_weights}, Actual Sample weights: {memory_set_weights}")
-                memory_set_weights = torch.ones(self.memory_set_manager.memory_set_size).to(DEVICE)
+                #memory_set_weights = torch.ones(self.memory_set_manager.memory_set_size).to(DEVICE)
+                memory_set_weights = self.tasks[self.task_index - 1].get_memory_set_weights().to(DEVICE)
                 # Debugging prints for weights
                 # print(f"memory set weights size:{len(train_dataloader.dataset)}")
                 
@@ -868,7 +873,7 @@ class ContinualLearningManager(ABC):
                 criterion = nn.CrossEntropyLoss(weight=label_weights)
 
         else: #not use weights
-            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+            if self.memory_set_manager.__class__.__name__ != "GCRMemorySetManager":
                 memory_set_weights = torch.ones(self.memory_set_manager.memory_set_size).to(DEVICE)
                 memory_set_weights = self.tasks[self.task_index].memory_set_weights.to(DEVICE)
                 def gcr_loss(outputs, batch_y, sample_weights):
@@ -928,6 +933,7 @@ class ContinualLearningManager(ABC):
                 #print(batch_y.get_device())
                 
                 if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+                    
                     sample_weights = memory_set_weights[:len(batch_x)]
                     loss = criterion(outputs, batch_y, sample_weights)
                 else:

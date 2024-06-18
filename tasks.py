@@ -57,6 +57,7 @@ class Task:
             self.memory_set_manager = memory_set_manager
             self.memory_set_weights = torch.ones(self.memory_x.shape[0])
             print("empty memory set weights initialized in tasks.py")
+            print("Memory set weights shape in tasks: ", self.memory_set_weights)
             # self.memory_z = torch.empty(0)
 
         print("Memory created in tasks.py with number of samples (?): ", len(self.memory_x))
@@ -80,4 +81,22 @@ class Task:
             
         else:
             raise NotImplementedError("Only Lambda and GSS Memory Selection methods update memory set in runtime.")
+        
+
+    #GCR functions
+    def update_memory_set_weights(self, weights):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            print("weights that have been passed in tasks:")
+            print(weights)
+            self.memory_set_weights = weights
+            print("Memory set weights updated in tasks.py")
+            print("Memory set weights shape in tasks: ", self.memory_set_weights)
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method updates memory set weights in runtime.")
+        
+    def get_memory_set_weights(self):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            return self.memory_set_weights
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method returns memory set weights in runtime.")
 

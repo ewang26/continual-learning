@@ -5,7 +5,7 @@ wandb_profile: alanhsu
 
 
 # Memory set hyperparameters
-memory_set_manager: random
+memory_set_manager: GCR
 use_memory_set: True
 grad_type: ['past'] # can do 'past' or 'present'
 p: dummar_var
@@ -14,14 +14,14 @@ num_ideal_models: 10
 num_centroids: 4
 
 # for gradient evaluating
-p_arr: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
-num_samples: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+# p_arr: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
+# num_samples: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 #p_arr: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
 #num_samples: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 #num_samples: [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
-p_arr: [0.001, 0.002]
-num_samples: [2, 2]
+p_arr: [0.001]
+num_samples: [1]
 
 #debugging 
 train_debug: False
@@ -36,10 +36,11 @@ learning_manager: mnist_split
 
 # Training hyperparameters
 lr: 0.001
-batch_size: 256
+batch_size: 10
 random_seed: 0xC0FFEE
-epochs: 50
+#epochs: 50
 #epochs: 30
+epochs: 2
 
 # Model arch 
 model:
