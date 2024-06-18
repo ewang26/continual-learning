@@ -692,6 +692,7 @@ class iCaRLNet(nn.Module):
             images: torch tensor containing images of a class
         """
 
+        exemplar_indices = []
         features = []
         self.feature_extractor.eval()
         with torch.no_grad():  
@@ -731,6 +732,7 @@ class iCaRLNet(nn.Module):
             # breakpoint()
             exemplar_set.append(images[arg_min_i])
             exemplar_features.append(features[arg_min_i])
+            exemplar_indices.append(arg_min_i)
 
             print(f"Shape of exemplar_features is: {torch.stack(exemplar_features).shape}")
             # sum_inner can be updated by adding the new exemplar image (i.e., features[arg_min_i])
@@ -740,7 +742,8 @@ class iCaRLNet(nn.Module):
         # Updating the class variables
         self.exemplar_sets.append(torch.stack(exemplar_set)) # self.exemplar_sets should be a list of tensors
         self.exemplar_labels.append(labels[:m])
-        return torch.stack(exemplar_set), labels[:m]
+        return torch.tensor(exemplar_indices) # only need to return the indices of selected elements from the class data
+        # return torch.stack(exemplar_set), labels[:m]
 
 
     def combine_exemplar_sets(self):
@@ -881,6 +884,8 @@ class iCaRL(MemorySetManager):
         """ Create or update memory set for new tasks """
         print(f"x.shape of incoming task data is {x.shape}, y.shape is {y.shape}")
 
+        x_original = x # making a copy to select the right images
+
         transform_test = transforms.Compose([
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
@@ -889,7 +894,6 @@ class iCaRL(MemorySetManager):
         if self.first_task: 
             self.memory_set_size = int(self.p * len(x) / 2) # divide by two because we construct a coreset for each class
             print(f"memory set size is {self.memory_set_size}")
-
 
         if x.dim() == 2: # only reshape and duplicate color channel if MNIST
             x = x.view(-1, 28, 28)
@@ -905,27 +909,27 @@ class iCaRL(MemorySetManager):
         print("updated representation")
 
         classes = torch.unique(y)
-        first_mask = (y == classes[0])
-        second_mask = (y == classes[1])
+        coreset_images = []
+        coreset_labels = []
 
-        first_images = x[first_mask]
-        second_images = x[second_mask]
+        for cls in classes:
+            class_mask = (y == cls)
+            class_images = x[class_mask]
+            class_labels = y[class_mask]
+            
+            print(f"Starting selection for class {cls.item()}")
+            coreset_indices = self.net.construct_exemplar_set(class_images, class_labels, self.memory_set_size, transform_test)
+            
+            coreset_images.append(x_original[coreset_indices])
+            coreset_labels.append(y[coreset_indices])
 
-        first_labels = y[first_mask]
-        second_labels = y[second_mask]
-
-        print("Starting selection for first class")
-        first_coreset, first_coreset_labels = self.net.construct_exemplar_set(first_images, first_labels, self.memory_set_size, transform_test)  # update the exemplar set for the new class
-        print("Starting selection for second class")
-        second_coreset, second_coreset_labels = self.net.construct_exemplar_set(second_images, second_labels, self.memory_set_size, transform_test)  # update the exemplar set for the new class
-
-        coreset = torch.cat((first_coreset, second_coreset))
-        coreset_labels = torch.cat((first_coreset_labels, second_coreset_labels))
-        print(f"memory set after construction is: {self.net.exemplar_sets[-1].shape}")
+        coreset = torch.cat(coreset_images)
+        coreset_labels = torch.cat(coreset_labels)
+        print(f"coreset after construction has shape: {coreset.shape}, {coreset_labels.shape}")
+        print(f"\nmemory set after construction is: {self.net.exemplar_sets[-1].shape}")
 
         print("constructed the new memory set")
         
         self.first_task = False
 
         return coreset, coreset_labels
-        # should these be tensors?
