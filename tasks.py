@@ -3,6 +3,9 @@ from torch import Tensor
 from typing import Set
 from data import MemorySetManager
 import numpy as np
+from torch import Tensor
+import torch
+from torch import nn
 
 
 class Task:
@@ -50,9 +53,13 @@ class Task:
         if memory_set_manager.__class__.__name__ == 'LambdaMemorySetManager':
             self.memory_set_manager = memory_set_manager
 
-        elif memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+        if memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
             self.memory_set_manager = memory_set_manager
-            self.memory_set_weights = memory_set_manager.memory_set_weights  # initialize weights for memory set
+            self.memory_set_weights = torch.ones(self.memory_x.shape[0])
+            print("empty memory set weights initialized in tasks.py")
+            # self.memory_z = torch.empty(0)
+
+        print("Memory created in tasks.py with number of samples (?): ", len(self.memory_x))
 
     def modify_memory(self, sample_x, sample_y, outputs=None, grad_sample=None, grad_batch=None):
 
@@ -73,3 +80,4 @@ class Task:
             
         else:
             raise NotImplementedError("Only Lambda and GSS Memory Selection methods update memory set in runtime.")
+
