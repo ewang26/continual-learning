@@ -323,66 +323,18 @@ class ContinualLearningManager(ABC):
                     self.update_memory_gcr(batch_x, batch_y, grad_sample, model)
                     print("after update")
 
-    def update_memory_gcr(self, batch_x, batch_y, grad_sample, model):
-        # Move the batch data and memory data to the appropriate device
-        # batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-        # self.tasks[self.task_index].memory_x = self.tasks[self.task_index].memory_x.to(DEVICE)
-        # self.tasks[self.task_index].memory_y = self.tasks[self.task_index].memory_y.to(DEVICE)
-        # self.tasks[self.task_index].memory_z = self.tasks[self.task_index].memory_z.to(DEVICE)
-        # self.tasks[self.task_index].memory_set_weights = self.tasks[self.task_index].memory_set_weights.to(DEVICE)
-
-        print("testing")
-        # Get the preactivations for the new samples
-        _, preactivations = model(batch_x.to(DEVICE), return_preactivations=True)
-
-        # Initialize memory_z if it is None
-        # if self.tasks[self.task_index].memory_z is None:
-        #     self.tasks[self.task_index].memory_z = torch.empty((0, preactivations.shape[1]))
-
-        print(f"memory_x starts as {self.tasks[self.task_index].memory_x.size()}")
-       
-        # Get the number of unique labels in the updated memory set
-        # unique_labels = torch.unique(self.tasks[self.task_index].memory_y)
-        # Y = len(unique_labels)
-
-        # print(f"Y is {Y}")
-
-        # Partition the memory set and weights based on labels
-        # 32x32 for CIFAR only
-
-        # dataset_shape2 = batch_x.shape[2]
+    def update_memory_gcr(self, batch_x, batch_y, grad_sample, model):       
+        # 2 classes for MNIST and CIFAR10 only
         Y = 2
 
         print(batch_y)
         y_labels = torch.unique(batch_y)
         D_x_y = [batch_x[batch_y == y] for y in y_labels]
         D_y_y = [batch_y[batch_y == y] for y in y_labels]
-
-        # print([m.shape for m in memory_x_y])
-        # memory_x_y = [torch.empty((0, self.tasks[self.task_index].memory_x.shape[1], dataset_shape2, dataset_shape2), device=DEVICE) for _ in range(2)]
-        # memory_y_y = [torch.empty((0,), dtype=torch.long, device=DEVICE) for _ in range(Y)]
-        # memory_z_y = [torch.empty((0, self.tasks[self.task_index].memory_z.shape[1]), device=DEVICE) for _ in range(Y)]
-
-        D_w_y = [torch.ones(m.shape[0], requires_grad=True) for m in D_x_y]  # Initialize weights to ones
-
-        # for i in range(len(self.tasks[self.task_index].memory_x):
-        #     x, y, z = self.tasks[self.task_index].memory_x[i], self.tasks[self.task_index].memory_y[i].long(), self.tasks[self.task_index].memory_z[i]
-        #     print(f"x is {x.size()}")
-        #     # print(f"memory_x.shape[1] has shape {self.tasks[self.task_index].memory_x.shape}")
-        #     # print(f"memory_x_y[i] has shape {memory_x_y[0]}")
-
-        #     label_index = (unique_labels == y).nonzero(as_tuple=True)[0].item()
-        #     memory_x_y[label_index] = torch.cat((memory_x_y[label_index], x.unsqueeze(0)))
-        #     memory_y_y[label_index] = torch.cat((memory_y_y[label_index], y.unsqueeze(0)))
-        #     memory_z_y[label_index] = torch.cat((memory_z_y[label_index], z.unsqueeze(0)))
-        #     memory_weights_y[label_index] = torch.cat((memory_weights_y[label_index], self.tasks[self.task_index].memory_set_weights[i].unsqueeze(0)))
-
-        # print(f"D_x_y shape is: {D_x_y.size()}")
-        # print(f"Batch_x shape is: {batch_x.size()}")
-        # print(f"D_y_y shape is: {D_y_y.size()}")
-
-        # these memory variables are the memory sets that we append to
-        # need to provide a shape to start with
+        
+        # initialize dataset weights to ones, and partitioned into tasks
+        D_w_y = [torch.ones_like(subtensor) for subtensor in D_y_y]
+        print(f"Checking D_w_y: {len(D_w_y[0])} and {len(D_w_y[1])}")
 
         if len(batch_x.shape) == 4:
             memory_x = torch.empty((0, batch_x.size(1), batch_x.size(2), batch_x.size(2))) 
@@ -396,181 +348,218 @@ class ContinualLearningManager(ABC):
         for y in range(Y): #EW this corresponds to line 5 in algorithm 2
             k_y = self.memory_set_manager.memory_set_size // Y
 
-            # # If there are no samples for this label, skip
-            # if len(memory_x_y[y]) == 0:
-            #     continue
-
             print(f"Class number within task is {y}")
 
             if len(batch_x.shape) == 4:
                 X_y = torch.empty((0, batch_x.size(1), batch_x.size(2), batch_x.size(2)), requires_grad=True) 
                 Y_y = torch.empty((0,), requires_grad=True)
-                W_X_y = torch.empty((0,), requires_grad=True)
             if len(batch_x.shape) == 2:
                 X_y = torch.empty((0, batch_x.size(1)), requires_grad=True)
                 Y_y = torch.empty((0,), requires_grad=True)
-                W_X_y = torch.empty((0,), requires_grad=True)
-
-            # Calculate initial residuals
-            # print(f"initial memory_y_y[y] is {memory_y_y[y]}")
-
-            # print(f"memory_x_y[{y}]: {D_x_y[y]}, memory_y_y[{y}]: {D_y_y[y]}, memory_z_y[{y}]: {D_z_y[y]}, memory_weights: {D_w_y[y]}")
-            # r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y, model)
-
-            # while len(X_y) <= k_y and self.l_sub(memory_x_y[y], memory_y_y[y], memory_z_y[y], memory_weights_y[y], X_y, memory_y_y[y][:len(X_y)], Z_y, W_X_y, model) >= self.memory_set_manager.epsilon:
             
-            e = 0  
+            W_X_y = torch.empty((0,), requires_grad=False).to(DEVICE)
 
-            while len(X_y) <= k_y:  
+            X_y_w = torch.zeros(len(D_x_y[y]), requires_grad=True).to(DEVICE)
+            X_y_w_updated = X_y_w.clone().to(DEVICE)
+
+            # corresponds to line 7
+            r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w, model)
+
+            e_indices = []
+
+            while len(X_y) <= k_y: 
                 # Find the data point with maximum residual
-                # Update per-class subset
+
+                print(f"Residuals at top: {r}")
+                e = torch.argmax(torch.abs(r))
+                print(f"new e is: {e}")
+                print(f"residual {e}: {r[e]}")
+                e_indices.append(e)
+
                 X_y = torch.cat((X_y, D_x_y[y][e].unsqueeze(0)))
                 Y_y = torch.cat((Y_y, D_y_y[y][e].unsqueeze(0)))
 
-                # print("hi")
-                # Update per-class weights
-                W_X_y = self.minimize_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, model)
+                W_X_y = self.minimize_l_sub_OMP(D_x_y[y], D_y_y[y], X_y, Y_y, model)
 
-                # print("hello")
-                # print(f"residuals y is {memory_y_y[y]}")
+                X_y_w_updated[torch.tensor(e_indices).to(DEVICE)] = torch.from_numpy(W_X_y).to(DEVICE)
+                
                 # Update residuals
-                r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y, model)
-                # print(f"residuals is {r}")
-                e = torch.argmax(torch.abs(r))
+                r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w_updated, model)
+                # print(f"Residuals at bottom: {r}")
 
-            print(102)
             # Update the overall subset and weights
             memory_x = torch.cat((memory_x, X_y.cpu().detach()))
             memory_y = torch.cat((memory_y, Y_y.cpu().detach()))
-            memory_weights = torch.cat((memory_weights, W_X_y.cpu().detach()))
+            memory_weights = torch.cat((memory_weights, torch.from_numpy(W_X_y)))
 
         # Update the memory set with the selected subset and weights
-        print("101")
         self.tasks[self.task_index].memory_x = memory_x
         self.tasks[self.task_index].memory_y = memory_y.long()
         self.tasks[self.task_index].memory_set_weights = memory_weights
+
 
     def l_rep(self, x, y, w, model):
         x = x.to(DEVICE)
         y = y.to(DEVICE)
         w = w.to(DEVICE)
-        # print(f"x shape is: {model(x).shape} and y shape is: {y.shape}")
-        # print(1)
 
-        # print(f"cross ent is {nn.CrossEntropyLoss()(model(x), y.long())}")
+        ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        weighted_loss = self.memory_set_manager.beta * w * ce_loss
+        return weighted_loss.sum()
 
-        ce_loss = self.memory_set_manager.beta * w * nn.CrossEntropyLoss()(model(x), y.long())
-        # ce_loss = torch.ones((5000,), requires_grad=True)
-        # print(f"ce loss {ce_loss.requires_grad}")
-        # print(10)
-        return ce_loss
+    def l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):
 
-    # def compute_total_gradients(self, outputs, model):
-    #     print(f"loss is {outputs}")
-    #     init_vals = []
-    #     for i, output in enumerate(outputs):
-    #         init_grad = []
-    #         # print(f"ce loss {output.requires_grad}")
-    #         # print(f"model {model.parameters()}")
-    #         # print(f"output shape {output.shape} and val {output}")
-    #         grad_X = torch.autograd.grad(output, model.parameters(), allow_unused=True, create_graph=True)   
-            
-    #         for idx, grad in enumerate(grad_X): 
-    #             # print(f"Gradient {idx + 1} shape: {grad.shape}") 
-    #             # print(f"Gradient {idx + 1} values: {grad}")
-    #             if grad != None:
-    #                 a = grad.cpu().detach().numpy().flatten()
-    #                 init_grad.append(a)
-    #         init_vals.append(np.concatenate(init_grad).flatten())
-
-    #     return np.sum(np.array(init_vals), axis=0)
-
-    def compute_total_gradients(self, outputs, model):
-
-        # print(f"outputs {outputs.requires_grad}")
-        scalar_loss = outputs.sum()
-        # print(f"scalar {scalar_loss.requires_grad}")
-        
-        # Calculate gradients of the summed loss with respect to the model parameters
-        grads = torch.autograd.grad(scalar_loss, model.parameters(), allow_unused=True, create_graph=True)
-        # print(f"1034 {grads.requires_grad}")
-        
-        # Initialize a list to hold flattened gradients
-        init_vals = []
-        
-        # Process each gradient, flatten and detach from the current graph for further operations
-        for grad in grads:
-            # print(f"34 {grad.requires_grad}")
-            if grad is not None:
-                # Convert to numpy after detaching and moving to cpu
-                # flat_grad = grad.cpu().detach().numpy().flatten()
-                flat_grad = grad.cpu().flatten()
-                # print(f"108 {flat_grad.requires_grad}")
-                init_vals.append(flat_grad)
-        
-        # Concatenate all gradients to form a single vector
-        total_gradient = torch.cat(init_vals)
-
-        return total_gradient
-
-    def l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):    
-
-        # print(f"{D_x.requires_grad}, {D_y.requires_grad}, {W_D.requires_grad}, {X_y.requires_grad}, {Y_y.requires_grad}, {W_X_y.requires_grad}")
-
-        # print(f"shape of l_rep is {self.l_rep(D_x, D_y, W_D, model).shape}")
-
-        D_loss = self.compute_total_gradients(self.l_rep(D_x, D_y, W_D, model), model)
-        # print(f"1 {D_loss.requires_grad}")
-
-        # print(7)
-        if X_y.numel() == 0:
-            X_loss = 0
-        else:
-            # print(f"xy is {X_y}, yy is {Y_y}, wxy is {W_X_y}")
-            # print(6)
-            X_loss = self.compute_total_gradients(self.l_rep(X_y, Y_y, W_X_y, model), model)
+        # Compute gradients for D batch
+        inputs_D = self.l_rep(D_x, D_y, W_D, model)
+        grads_D = torch.autograd.grad(inputs_D, model.parameters(), create_graph=True)
+        grads_D = torch.cat([g.view(-1) for g in grads_D if g is not None]) # flattens the tensor
     
-        # print(f"2 {X_loss.requires_grad}")
-
+        # Compute gradients for X batch
+        inputs_X = self.l_rep(X_y, Y_y, W_X_y, model)
+        grads_X = torch.autograd.grad(inputs_X, model.parameters(), create_graph=True)
+        grads_X = torch.cat([g.view(-1) for g in grads_X if g is not None])
         
-        # for idx, grad in enumerate(grad_X): 
+        regularization_term = 0.001 * W_X_y.norm()**2
 
-        #     print(f"Gradient {idx + 1} shape: {grad.shape}") 
-        #     print(f"Gradient {idx + 1} values: {grad}")
+        # Compute the norm of the gradient difference squared
+        norm_loss = (grads_D - grads_X).norm()**2 + regularization_term
 
-        # loss_X_task = torch.sum(grad_X)
-        
-        # grad_X = torch.autograd.grad(self.l_rep(X_y, Y_y, W_X_y, model), model.parameters(), create_graph=True)
-        # loss_X_memory = torch.sum(grad_X)
-
-        loss_diff = torch.norm(D_loss - X_loss)
-
-        return loss_diff
+        return norm_loss
 
 
     def grad_l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):
-
-        # print(f"{D_x.shape}, {D_y.shape}, {W_D.shape}")
-        # print(f"requires grad {self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model).requires_grad}")
-        # print(f"Wxy {W_X_y.requires_grad}")
-        residuals = torch.autograd.grad(self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model), W_X_y, create_graph=True)
+        loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model)
+        residuals = torch.autograd.grad(loss, W_X_y, create_graph=True)
+        # print(f"residuals in grad_l_sub is: {residuals}")
         return residuals[0]
 
-    
-    def minimize_l_sub(self, D_x, D_y, W_D, X_y, Y_y, model):
-        # W_X = torch.ones(len(D_x), device=DEVICE, requires_grad=True)
-        W_X_y = torch.ones(len(X_y), device=DEVICE, requires_grad=True)
+    def minimize_l_sub(self, D_x, D_y, W_D, X_y, Y_y, X_y_w, model):
+        optimizer = torch.optim.Adam([X_y_w], lr=0.01)
+        iteration = 0
 
-        optimizer = torch.optim.SGD([W_X_y], lr=0.01)
-
-        for _ in range(100):  # Number of optimization steps
+        while True:
             optimizer.zero_grad()
-            loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model)
-            # print(f"loss grad {loss.requires_grad}")
+            loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, X_y_w, model)
             loss.backward(retain_graph=True)
+
+            # Check if the gradient norm exceeds 100000 and clip if needed
+            if torch.norm(X_y_w.grad) > 100000:
+                torch.nn.utils.clip_grad_norm_(X_y_w, 10000)
+                print("Clipped gradients")
+
+            # Print gradient information every 10 iterations
+            if iteration % 50 == 0:
+                print(f"Iteration {iteration}, grad norm: {torch.norm(X_y_w.grad)}")
+
+            # Step the optimizer
             optimizer.step()
 
-        return W_X_y
+            # Continue optimizing while the norm of the gradient is greater than 1
+            if torch.norm(X_y_w.grad) < 1:
+                print("Gradient norm is under 1, stopping optimization.")
+                break
+
+            # Add a fallback to prevent infinite loops
+            iteration += 1
+            if iteration >= 2000:
+                print("Reached maximum iterations, stopping optimization.")
+                break
+
+    def l_rep_OMP(self, x, y, model): # these l_rep functions don't need weights because they are finding the optimal w
+        x = x.to(DEVICE)
+        y = y.to(DEVICE)
+
+        ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        weighted_loss = self.memory_set_manager.beta * ce_loss
+        return weighted_loss.sum()
+
+    def l_rep_OMP_individual(self, x, y, model):
+        x = x.to(DEVICE)
+        y = y.to(DEVICE)
+        # Compute individual losses without reducing
+        ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        weighted_loss = self.memory_set_manager.beta * ce_loss
+        return weighted_loss
+
+    def minimize_l_sub_OMP(self, D_x, D_y, X_y, Y_y, model):
+        inputs_D = self.l_rep_OMP(D_x, D_y, model)
+        grads_D = torch.autograd.grad(inputs_D, model.parameters(), create_graph=True)
+        grads_D = torch.cat([g.view(-1) for g in grads_D if g is not None])
+
+        grads = []
+
+        # Gradient from subset
+        for i, x in enumerate(X_y):
+            loss_i = self.l_rep_OMP_individual(x, Y_y[i], model)
+            grads_i = torch.autograd.grad(loss_i, model.parameters(), create_graph=True)
+        
+            # Flatten and concatenate the gradients
+            grads_i_flat = torch.cat([g.view(-1) for g in grads_i if g is not None])
+        
+            # Append the gradients to the list
+            grads.append(grads_i_flat)
+
+        grads_X = torch.stack(grads).detach().cpu().numpy() 
+
+        self.orthogonalmp(grads_X, grads_D)
+
+    def orthogonalmp(self, mat_a, b, tol=1e-4, nnz=None, positive=False):
+        """approximately solves min_x |x|_0 s.t.
+
+        Ax=b using Orthogonal Matching Pursuit
+
+        Args:
+            mat_a: design matrix of size (d, n)
+            b: measurement vector of length d
+            tol: solver tolerance
+            nnz: maximum number of nonzero coefficients (if None set to n)
+            positive: only allow positive nonzero coefficients
+
+        Returns:
+            vector of length n
+        """
+
+        mat_at = mat_a.T
+        _, n = mat_a.shape
+        if nnz is None:
+            nnz = n
+        x = np.zeros(n)
+        resid = np.copy(b)
+        normb = norm(b)
+        indices = []
+        x_i = []
+        for _ in range(nnz):
+            if norm(resid) / normb < tol:
+                break
+                projections = mat_at.dot(resid)
+            if positive:
+                index = np.argmax(projections)
+            else:
+                index = np.argmax(abs(projections))
+            if index in indices:
+                break
+            indices.append(index)
+            mat_ai = None
+            if len(indices) == 1:
+                mat_ai = mat_a[:, index]
+                x_i = projections[index] / mat_ai.T.dot(mat_ai)
+            else:
+                mat_ai = np.vstack([mat_ai, mat_a[:, index]])
+                x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
+                if positive:
+                    while min(x_i) < 0.0:
+                        argmin = np.argmin(x_i)
+                        indices = indices[:argmin] + indices[argmin + 1 :]
+                        mat_ai = np.vstack([mat_ai[:argmin], mat_ai[argmin + 1 :]])
+                        x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
+            resid = b - mat_ai.T.dot(x_i)
+
+        for i, index in enumerate(indices):
+            try:
+                x[index] += x_i[i]
+            except IndexError:
+                x[index] += x_i
+        return x
 
 
 
