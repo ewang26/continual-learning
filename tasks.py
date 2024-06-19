@@ -46,6 +46,10 @@ class Task:
         self.task_labels = task_labels
         self.active = False
 
+        print("IN TASKS.PY")
+        print(f"Train memory set shape in tasks.py is: {self.memory_x.shape}")
+        print(f"Train memory set length in tasks.py is: {len(self.memory_y)}")
+
         if memory_set_manager.__class__.__name__ == 'GSSMemorySetManager':
             self.memory_set_manager = memory_set_manager # save the manager for future use
             self.C_arr = np.array([]) # initialize score array for memory set. i can use to initiaze for weights. 
@@ -86,13 +90,26 @@ class Task:
     #GCR functions
     def update_memory_set_weights(self, weights):
         if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
-            print("weights that have been passed in tasks:")
-            print(weights)
+            # print("weights that have been passed in tasks:")
+            # print(weights)
             self.memory_set_weights = weights
-            print("Memory set weights updated in tasks.py")
-            print("Memory set weights shape in tasks: ", self.memory_set_weights)
+            #print("Memory set weights updated in tasks.py")
+            #print("Memory set weights shape in tasks: ", self.memory_set_weights)
         else:
             raise NotImplementedError("Only GCR Memory Selection method updates memory set weights in runtime.")
+    
+    def update_task_memory_x(self, x):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            self.memory_x = x
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method updates memory set x in tasks.py")
+
+    def update_task_memory_y(self, y):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            self.memory_y = y
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method updates memory set y in tasks.py")
+
         
     def get_memory_set_weights(self):
         if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':

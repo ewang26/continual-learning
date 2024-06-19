@@ -84,8 +84,9 @@ class RandomMemorySetManager(MemorySetManager):
         memory_x = x[memory_set_indices]
         memory_y = y[memory_set_indices]
 
-        print(f"Shape of memory set in data.py is: {memory_x.shape}") # erik was just debugging some stuff
-        print("random memory set created in data.py")
+        # print(f"Shape of memory set in data.py is: {memory_x.shape}") # erik was just debugging some stuff
+        # print(f"Memory set size in data.py is: {memory_set_size}")
+        # print("random memory set created in data.py")
         return memory_x, memory_y
 
 #THEODORA K-MEANS
@@ -944,5 +945,6 @@ class GCRMemorySetManager(MemorySetManager):
         if self.p == 1:
             return x, y
         
-        print(f"Empty memory set of size {self.memory_set_size} created")
+        # print(f"Shape of memory set in data.py is: {memory_x.shape}") # erik was just debugging some stuff
+        print(f"Memory set size in data.py is: {self.memory_set_size}")
         return torch.empty(0), torch.empty(0)
