@@ -56,7 +56,7 @@ class MLP(nn.Module):
         if not return_preactivations:
             return o
         return o, pre_o
-
+    
 
 class CifarNet(nn.Module):
     def __init__(

@@ -3,6 +3,9 @@ from torch import Tensor
 from typing import Set
 from data import MemorySetManager
 import numpy as np
+from torch import Tensor
+import torch
+from torch import nn
 
 
 class Task:
@@ -43,6 +46,14 @@ class Task:
         self.task_labels = task_labels
         self.active = False
 
+        print("IN TASKS.PY")
+        print(f"Train memory set shape in tasks.py is: {self.memory_x.shape}")
+        print(f"Train memory set length in tasks.py is: {len(self.memory_y)}")
+
+        self.train_weights = torch.ones(self.train_x.shape[0])
+        self.memory_set_weights = torch.ones(self.memory_x.shape[0])
+        self.test_weights = torch.ones(self.test_x.shape[0])
+
         if memory_set_manager.__class__.__name__ == 'GSSMemorySetManager':
             self.memory_set_manager = memory_set_manager # save the manager for future use
             self.C_arr = np.array([]) # initialize score array for memory set. i can use to initiaze for weights. 
@@ -50,9 +61,15 @@ class Task:
         if memory_set_manager.__class__.__name__ == 'LambdaMemorySetManager':
             self.memory_set_manager = memory_set_manager
 
-        elif memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+        if memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
             self.memory_set_manager = memory_set_manager
-            self.memory_set_weights = memory_set_manager.memory_set_weights  # initialize weights for memory set
+            # self.train_weights = torch.ones(self.train_x.shape[0])
+            # self.memory_set_weights = torch.ones(self.memory_x.shape[0])
+            print("empty memory set weights initialized in tasks.py")
+            print("Memory set weights shape in tasks: ", self.memory_set_weights)
+            # self.memory_z = torch.empty(0)
+
+        print("Memory created in tasks.py with number of samples (?): ", len(self.memory_x))
 
     def modify_memory(self, sample_x, sample_y, outputs=None, grad_sample=None, grad_batch=None):
 
@@ -73,3 +90,42 @@ class Task:
             
         else:
             raise NotImplementedError("Only Lambda and GSS Memory Selection methods update memory set in runtime.")
+        
+
+    #GCR functions
+    def update_memory_set_weights(self, weights):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            # print("weights that have been passed in tasks:")
+            # print(weights)
+            self.memory_set_weights = weights
+        
+            #print("Memory set weights updated in tasks.py")
+            #print("Memory set weights shape in tasks: ", self.memory_set_weights)
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method updates memory set weights in runtime.")
+    
+    def update_task_memory_x(self, x):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            self.memory_x = x
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method updates memory set x in tasks.py")
+
+    def update_task_memory_y(self, y):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            self.memory_y = y
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method updates memory set y in tasks.py")
+
+        
+    def get_memory_set_weights(self):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            return self.memory_set_weights
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method returns memory set weights in runtime.")
+        
+    def get_train_weights(self):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            return self.train_weights
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method returns memory set weights in runtime.")
+

@@ -1,7 +1,7 @@
 #main_batch 
 
 from data import RandomMemorySetManager, KMeansMemorySetManager, \
-        LambdaMemorySetManager, GSSMemorySetManager, ClassBalancedReservoirSampling, iCaRL
+        LambdaMemorySetManager, GSSMemorySetManager, ClassBalancedReservoirSampling, iCaRL, GCRMemorySetManager
 # import multiprocessing
 from managers import MnistManagerSplit, Cifar10ManagerSplit, Cifar100ManagerSplit
 from configs.config import Config
@@ -110,8 +110,8 @@ def main(config: Config):
                 memory_set_manager = config.memory_set_manager(p, random_seed=random_seed)
             elif config.memory_set_manager == iCaRL:
                 memory_set_manager = config.memory_set_manager(p, n_classes = 2, random_seed=random_seed)
-
-
+            elif config.memory_set_manager == GCRMemorySetManager:
+                memory_set_manager = config.memory_set_manager(p, random_seed=random_seed)
             else:
                 raise ValueError(f"Unsupported memory set manager: {config.memory_set_manager}")
             
@@ -213,6 +213,7 @@ def main(config: Config):
                         model_save_path = None
 
                     print(f"Training on Task {task_num}")
+                    print("About to start training")
                     acc, backward_transfer = manager.train(
                         epochs=epochs,
                         batch_size=config.batch_size,

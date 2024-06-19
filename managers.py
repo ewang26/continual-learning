@@ -17,6 +17,10 @@ import wandb
 from matplotlib import pyplot as plt
 from torch.nn.utils import clip_grad_norm_
 import os
+from sklearn.linear_model import OrthogonalMatchingPursuit
+import torch.nn.functional as F
+import functools
+from functools import partial 
 
 from data import MemorySetManager
 from models import MLP, MNLIST_MLP_ARCH, CifarNet, CIFAR10_ARCH, CIFAR100_ARCH
@@ -151,8 +155,17 @@ class ContinualLearningManager(ABC):
         task_wise_examples = [0] * (self.task_index + 1)
 
         for batch_x, batch_y in test_dataloader:
+
+            #GCR addition
+            # if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+            #     batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1]
+
             batch_x = batch_x.to(DEVICE)
             batch_y = batch_y.to(DEVICE)
+
+            #GCR addition
+            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+                batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1]  
 
             outputs = model(batch_x)
 
@@ -295,94 +308,44 @@ class ContinualLearningManager(ABC):
                 outputs = model(batch_x)
                 self.tasks[self.task_index].modify_memory(batch_x, batch_y, outputs=outputs)
 
-
                 
-        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+        elif self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
             if not (p == 1):
+                print ("IN UPDATE FUNCTION")
+                print("calling get teriminal task dataloader from update_memory_set")
                 terminal_train_dataloader = self._get_terminal_task_dataloader(full_batch=True)
-                criterion = nn.CrossEntropyLoss()
+                #criterion = nn.CrossEntropyLoss()
                 current_labels: List[int] = list(self._get_current_labels())
                 model = model.to(DEVICE)
 
                 # This is actually iterating once since batch_x/y is the full terminal task dataset
+                print("batch x length in update memory set from TERMINAL LOADER: ", len(terminal_train_dataloader))
                 for batch_x, batch_y in terminal_train_dataloader:
-                    
-                    
+                
                     # batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-                    grad_sample = self.get_forward_pass_gradients(batch_x, batch_y, model, criterion, current_labels)
-                    # self.update_reservoir(batch_x, batch_y)
+                    #grad_sample = self.get_forward_pass_gradients(batch_x, batch_y, model, criterion, current_labels)
 
+                    
+                    batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1] #GCR addition
                     batch_x.requires_grad=True
                     batch_y = batch_y.float()
                     batch_y.requires_grad=True 
-                    print(batch_y)
-                    print(f"batch x shape {batch_x.shape}")
-
                     print("before update")
-                    # print(f"model is {model.conv_block[4].return_indices}")
-                    self.update_memory_gcr(batch_x, batch_y, grad_sample, model)
+                    self.update_memory_gcr(batch_x, batch_y, model) #its ok to not pass batch_w_x here, right?
                     print("after update")
 
-    def update_memory_gcr(self, batch_x, batch_y, grad_sample, model):
-        # Move the batch data and memory data to the appropriate device
-        # batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-        # self.tasks[self.task_index].memory_x = self.tasks[self.task_index].memory_x.to(DEVICE)
-        # self.tasks[self.task_index].memory_y = self.tasks[self.task_index].memory_y.to(DEVICE)
-        # self.tasks[self.task_index].memory_z = self.tasks[self.task_index].memory_z.to(DEVICE)
-        # self.tasks[self.task_index].memory_set_weights = self.tasks[self.task_index].memory_set_weights.to(DEVICE)
-
-        print("testing")
-        # Get the preactivations for the new samples
-        _, preactivations = model(batch_x.to(DEVICE), return_preactivations=True)
-
-        # Initialize memory_z if it is None
-        # if self.tasks[self.task_index].memory_z is None:
-        #     self.tasks[self.task_index].memory_z = torch.empty((0, preactivations.shape[1]))
-
-        print(f"memory_x starts as {self.tasks[self.task_index].memory_x.size()}")
-       
-        # Get the number of unique labels in the updated memory set
-        # unique_labels = torch.unique(self.tasks[self.task_index].memory_y)
-        # Y = len(unique_labels)
-
-        # print(f"Y is {Y}")
-
-        # Partition the memory set and weights based on labels
-        # 32x32 for CIFAR only
-
-        # dataset_shape2 = batch_x.shape[2]
+    def update_memory_gcr(self, batch_x, batch_y, model):       
+        # 2 classes for MNIST and CIFAR10 only
         Y = 2
 
         print(batch_y)
         y_labels = torch.unique(batch_y)
         D_x_y = [batch_x[batch_y == y] for y in y_labels]
         D_y_y = [batch_y[batch_y == y] for y in y_labels]
-
-        # print([m.shape for m in memory_x_y])
-        # memory_x_y = [torch.empty((0, self.tasks[self.task_index].memory_x.shape[1], dataset_shape2, dataset_shape2), device=DEVICE) for _ in range(2)]
-        # memory_y_y = [torch.empty((0,), dtype=torch.long, device=DEVICE) for _ in range(Y)]
-        # memory_z_y = [torch.empty((0, self.tasks[self.task_index].memory_z.shape[1]), device=DEVICE) for _ in range(Y)]
-
-        D_w_y = [torch.ones(m.shape[0], requires_grad=True) for m in D_x_y]  # Initialize weights to ones
-
-        # for i in range(len(self.tasks[self.task_index].memory_x):
-        #     x, y, z = self.tasks[self.task_index].memory_x[i], self.tasks[self.task_index].memory_y[i].long(), self.tasks[self.task_index].memory_z[i]
-        #     print(f"x is {x.size()}")
-        #     # print(f"memory_x.shape[1] has shape {self.tasks[self.task_index].memory_x.shape}")
-        #     # print(f"memory_x_y[i] has shape {memory_x_y[0]}")
-
-        #     label_index = (unique_labels == y).nonzero(as_tuple=True)[0].item()
-        #     memory_x_y[label_index] = torch.cat((memory_x_y[label_index], x.unsqueeze(0)))
-        #     memory_y_y[label_index] = torch.cat((memory_y_y[label_index], y.unsqueeze(0)))
-        #     memory_z_y[label_index] = torch.cat((memory_z_y[label_index], z.unsqueeze(0)))
-        #     memory_weights_y[label_index] = torch.cat((memory_weights_y[label_index], self.tasks[self.task_index].memory_set_weights[i].unsqueeze(0)))
-
-        # print(f"D_x_y shape is: {D_x_y.size()}")
-        # print(f"Batch_x shape is: {batch_x.size()}")
-        # print(f"D_y_y shape is: {D_y_y.size()}")
-
-        # these memory variables are the memory sets that we append to
-        # need to provide a shape to start with
+        
+        # initialize dataset weights to ones, and partitioned into tasks
+        D_w_y = [torch.ones_like(subtensor) for subtensor in D_y_y]
+        # print(f"Checking D_w_y: {len(D_w_y[0])} and {len(D_w_y[1])}")
 
         if len(batch_x.shape) == 4:
             memory_x = torch.empty((0, batch_x.size(1), batch_x.size(2), batch_x.size(2))) 
@@ -396,181 +359,316 @@ class ContinualLearningManager(ABC):
         for y in range(Y): #EW this corresponds to line 5 in algorithm 2
             k_y = self.memory_set_manager.memory_set_size // Y
 
-            # # If there are no samples for this label, skip
-            # if len(memory_x_y[y]) == 0:
-            #     continue
-
-            print(f"Class number within task is {y}")
+            # print(f"Class number within task is {y}")
 
             if len(batch_x.shape) == 4:
                 X_y = torch.empty((0, batch_x.size(1), batch_x.size(2), batch_x.size(2)), requires_grad=True) 
                 Y_y = torch.empty((0,), requires_grad=True)
-                W_X_y = torch.empty((0,), requires_grad=True)
             if len(batch_x.shape) == 2:
                 X_y = torch.empty((0, batch_x.size(1)), requires_grad=True)
                 Y_y = torch.empty((0,), requires_grad=True)
-                W_X_y = torch.empty((0,), requires_grad=True)
-
-            # Calculate initial residuals
-            # print(f"initial memory_y_y[y] is {memory_y_y[y]}")
-
-            # print(f"memory_x_y[{y}]: {D_x_y[y]}, memory_y_y[{y}]: {D_y_y[y]}, memory_z_y[{y}]: {D_z_y[y]}, memory_weights: {D_w_y[y]}")
-            # r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y, model)
-
-            # while len(X_y) <= k_y and self.l_sub(memory_x_y[y], memory_y_y[y], memory_z_y[y], memory_weights_y[y], X_y, memory_y_y[y][:len(X_y)], Z_y, W_X_y, model) >= self.memory_set_manager.epsilon:
             
-            e = 0  
+            W_X_y = torch.empty((0,), requires_grad=False).to(DEVICE)
 
-            while len(X_y) <= k_y:  
+            X_y_w = torch.zeros(len(D_x_y[y]), requires_grad=True).to(DEVICE)
+            X_y_w_updated = X_y_w.clone().to(DEVICE)
+
+            # corresponds to line 7
+            r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w, model)
+
+            e_indices = []
+
+            while len(X_y) <= k_y: 
                 # Find the data point with maximum residual
-                # Update per-class subset
+
+                # print(f"Residuals at top: {r}")
+                e = torch.argmax(torch.abs(r))
+                # print(f"new e is: {e}")
+                # print(f"residual {e}: {r[e]}")
+                e_indices.append(e)
+
                 X_y = torch.cat((X_y, D_x_y[y][e].unsqueeze(0)))
                 Y_y = torch.cat((Y_y, D_y_y[y][e].unsqueeze(0)))
 
-                # print("hi")
-                # Update per-class weights
-                W_X_y = self.minimize_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, model)
+                W_X_y = self.minimize_l_sub_OMP(D_x_y[y], D_y_y[y], X_y, Y_y, model)
 
-                # print("hello")
-                # print(f"residuals y is {memory_y_y[y]}")
+                # Below is optimizing W_X_y
+                # one_tensor = torch.tensor([1.0], requires_grad=False).to(DEVICE)
+                # W_X_y = torch.cat((W_X_y, one_tensor))
+                # W_X_y_leaf = W_X_y.clone().detach().requires_grad_(True)
+
+                # # Calculate updated weights for coreset elements
+                # W_X_y_leaf = self.minimize_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y_leaf, model)
+                # W_X_y = W_X_y_leaf.detach()
+                # print(f"Memory data loss: {self.l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y, model)}")
+                
+                
+                # Update full weights with new learned weights 
+                X_y_w_updated[torch.tensor(e_indices).to(DEVICE)] = torch.from_numpy(W_X_y).to(DEVICE)
+                # print(f"W_X_y is: {W_X_y} and len is {W_X_y.shape}")
+                # print(f"Memory data loss: {self.l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, torch.from_numpy(W_X_y), model)}")
+                # print(f"Total data loss: {self.l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w_updated, model)}")
+
                 # Update residuals
-                r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y, model)
-                # print(f"residuals is {r}")
-                e = torch.argmax(torch.abs(r))
+                r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w_updated, model)
+                # print(f"Residuals at bottom: {r}")
 
-            print(102)
             # Update the overall subset and weights
             memory_x = torch.cat((memory_x, X_y.cpu().detach()))
             memory_y = torch.cat((memory_y, Y_y.cpu().detach()))
-            memory_weights = torch.cat((memory_weights, W_X_y.cpu().detach()))
+            memory_weights = torch.cat((memory_weights, torch.from_numpy(W_X_y)))
 
         # Update the memory set with the selected subset and weights
-        print("101")
-        self.tasks[self.task_index].memory_x = memory_x
-        self.tasks[self.task_index].memory_y = memory_y.long()
-        self.tasks[self.task_index].memory_set_weights = memory_weights
+        # self.tasks[self.task_index].memory_x = memory_x
+        # self.tasks[self.task_index].memory_y = memory_y.long()
+        #ATTENTION UNCOMMENTED THE STUFF ABOVE. MIGHT CHANGE FUNCTIONALITY A LOT.
+        self.tasks[self.task_index].update_task_memory_x(memory_x)
+        self.tasks[self.task_index].update_task_memory_y(memory_y.long())
+        # print("UPDATED memory x length in update memory set is: ", len(self.tasks[self.task_index].memory_x))
+        # print("UPDATED memory x shape is: ", self.tasks[self.task_index].memory_x.shape)
+        #self.tasks[self.task_index].memory_set_weights = memory_weights
+        self.tasks[self.task_index].update_memory_set_weights(memory_weights)
+
+
+        print("outside of train")
+        print(f"Number of memory set weights: {len(self.tasks[self.task_index].memory_set_weights)}")
+        #print(f"Memory set weights: {self.tasks[self.task_index].memory_set_weights}")
+
 
     def l_rep(self, x, y, w, model):
         x = x.to(DEVICE)
         y = y.to(DEVICE)
         w = w.to(DEVICE)
-        # print(f"x shape is: {model(x).shape} and y shape is: {y.shape}")
-        # print(1)
 
-        # print(f"cross ent is {nn.CrossEntropyLoss()(model(x), y.long())}")
+        ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        weighted_loss = self.memory_set_manager.beta * w * ce_loss
+        return weighted_loss.sum()
 
-        ce_loss = self.memory_set_manager.beta * w * nn.CrossEntropyLoss()(model(x), y.long())
-        # ce_loss = torch.ones((5000,), requires_grad=True)
-        # print(f"ce loss {ce_loss.requires_grad}")
-        # print(10)
-        return ce_loss
+    def l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):
 
-    # def compute_total_gradients(self, outputs, model):
-    #     print(f"loss is {outputs}")
-    #     init_vals = []
-    #     for i, output in enumerate(outputs):
-    #         init_grad = []
-    #         # print(f"ce loss {output.requires_grad}")
-    #         # print(f"model {model.parameters()}")
-    #         # print(f"output shape {output.shape} and val {output}")
-    #         grad_X = torch.autograd.grad(output, model.parameters(), allow_unused=True, create_graph=True)   
-            
-    #         for idx, grad in enumerate(grad_X): 
-    #             # print(f"Gradient {idx + 1} shape: {grad.shape}") 
-    #             # print(f"Gradient {idx + 1} values: {grad}")
-    #             if grad != None:
-    #                 a = grad.cpu().detach().numpy().flatten()
-    #                 init_grad.append(a)
-    #         init_vals.append(np.concatenate(init_grad).flatten())
-
-    #     return np.sum(np.array(init_vals), axis=0)
-
-    def compute_total_gradients(self, outputs, model):
-
-        # print(f"outputs {outputs.requires_grad}")
-        scalar_loss = outputs.sum()
-        # print(f"scalar {scalar_loss.requires_grad}")
-        
-        # Calculate gradients of the summed loss with respect to the model parameters
-        grads = torch.autograd.grad(scalar_loss, model.parameters(), allow_unused=True, create_graph=True)
-        # print(f"1034 {grads.requires_grad}")
-        
-        # Initialize a list to hold flattened gradients
-        init_vals = []
-        
-        # Process each gradient, flatten and detach from the current graph for further operations
-        for grad in grads:
-            # print(f"34 {grad.requires_grad}")
-            if grad is not None:
-                # Convert to numpy after detaching and moving to cpu
-                # flat_grad = grad.cpu().detach().numpy().flatten()
-                flat_grad = grad.cpu().flatten()
-                # print(f"108 {flat_grad.requires_grad}")
-                init_vals.append(flat_grad)
-        
-        # Concatenate all gradients to form a single vector
-        total_gradient = torch.cat(init_vals)
-
-        return total_gradient
-
-    def l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):    
-
-        # print(f"{D_x.requires_grad}, {D_y.requires_grad}, {W_D.requires_grad}, {X_y.requires_grad}, {Y_y.requires_grad}, {W_X_y.requires_grad}")
-
-        # print(f"shape of l_rep is {self.l_rep(D_x, D_y, W_D, model).shape}")
-
-        D_loss = self.compute_total_gradients(self.l_rep(D_x, D_y, W_D, model), model)
-        # print(f"1 {D_loss.requires_grad}")
-
-        # print(7)
-        if X_y.numel() == 0:
-            X_loss = 0
-        else:
-            # print(f"xy is {X_y}, yy is {Y_y}, wxy is {W_X_y}")
-            # print(6)
-            X_loss = self.compute_total_gradients(self.l_rep(X_y, Y_y, W_X_y, model), model)
+        # Compute gradients for D batch
+        inputs_D = self.l_rep(D_x, D_y, W_D, model)
+        grads_D = torch.autograd.grad(inputs_D, model.parameters(), create_graph=True)
+        grads_D = torch.cat([g.view(-1) for g in grads_D if g is not None]) # flattens the tensor
     
-        # print(f"2 {X_loss.requires_grad}")
-
+        # Compute gradients for X batch
+        inputs_X = self.l_rep(X_y, Y_y, W_X_y, model)
+        grads_X = torch.autograd.grad(inputs_X, model.parameters(), create_graph=True)
+        grads_X = torch.cat([g.view(-1) for g in grads_X if g is not None])
         
-        # for idx, grad in enumerate(grad_X): 
+        regularization_term = 0.001 * W_X_y.norm()**2
 
-        #     print(f"Gradient {idx + 1} shape: {grad.shape}") 
-        #     print(f"Gradient {idx + 1} values: {grad}")
+        # Compute the norm of the gradient difference squared
+        norm_loss = (grads_D - grads_X).norm()**2 + regularization_term
 
-        # loss_X_task = torch.sum(grad_X)
-        
-        # grad_X = torch.autograd.grad(self.l_rep(X_y, Y_y, W_X_y, model), model.parameters(), create_graph=True)
-        # loss_X_memory = torch.sum(grad_X)
-
-        loss_diff = torch.norm(D_loss - X_loss)
-
-        return loss_diff
+        return norm_loss
 
 
     def grad_l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):
-
-        # print(f"{D_x.shape}, {D_y.shape}, {W_D.shape}")
-        # print(f"requires grad {self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model).requires_grad}")
-        # print(f"Wxy {W_X_y.requires_grad}")
-        residuals = torch.autograd.grad(self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model), W_X_y, create_graph=True)
+        loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model)
+        residuals = torch.autograd.grad(loss, W_X_y, create_graph=True)
+        # print(f"residuals in grad_l_sub is: {residuals}")
         return residuals[0]
 
-    
-    def minimize_l_sub(self, D_x, D_y, W_D, X_y, Y_y, model):
-        # W_X = torch.ones(len(D_x), device=DEVICE, requires_grad=True)
-        W_X_y = torch.ones(len(X_y), device=DEVICE, requires_grad=True)
+    def minimize_l_sub(self, D_x, D_y, W_D, X_y, Y_y, X_y_w, model):
+        optimizer = torch.optim.Adam([X_y_w], lr=0.01)
+        iteration = 0
 
-        optimizer = torch.optim.SGD([W_X_y], lr=0.01)
-
-        for _ in range(100):  # Number of optimization steps
+        while True:
             optimizer.zero_grad()
-            loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model)
-            # print(f"loss grad {loss.requires_grad}")
+            loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, X_y_w, model)
             loss.backward(retain_graph=True)
+
+            # Check if the gradient norm exceeds 100000 and clip if needed
+            if torch.norm(X_y_w.grad) > 100000:
+                torch.nn.utils.clip_grad_norm_(X_y_w, 10000)
+                print("Clipped gradients")
+
+            # Print gradient information every 10 iterations
+            if iteration % 50 == 0:
+                print(f"Iteration {iteration}, grad norm: {torch.norm(X_y_w.grad)}")
+
+            # Step the optimizer
             optimizer.step()
 
-        return W_X_y
+            # Continue optimizing while the norm of the gradient is greater than 1
+            if torch.norm(X_y_w.grad) < 1:
+                print("Gradient norm is under 1, stopping optimization.")
+                break
+
+            # Add a fallback to prevent infinite loops
+            iteration += 1
+            if iteration >= 2000:
+                print("Reached maximum iterations, stopping optimization.")
+                break
+
+    def l_rep_OMP(self, x, y, model):
+        x = x.to(DEVICE)
+        y = y.to(DEVICE)
+
+        ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        weighted_loss = self.memory_set_manager.beta * ce_loss
+        return weighted_loss.sum()
+
+    def l_rep_OMP_individual(self, x, y, model):
+        x = x.to(DEVICE)
+        y = y.to(DEVICE)
+        # Compute individual losses without reducing
+        ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        weighted_loss = self.memory_set_manager.beta * ce_loss
+        return weighted_loss
+
+    def minimize_l_sub_OMP(self, D_x, D_y, X_y, Y_y, model):
+        inputs_D = self.l_rep_OMP(D_x, D_y, model)
+        grads_D = torch.autograd.grad(inputs_D, model.parameters(), create_graph=True)
+        grads_D = torch.cat([g.view(-1) for g in grads_D if g is not None])
+        # print(f"D_x shape: {D_x.shape}")
+        # print(f"X_y shape: {X_y.shape}")
+
+        grads = []
+
+        # Gradient from subset
+        for i, x in enumerate(X_y):
+            loss_i = self.l_rep_OMP_individual(x, Y_y[i], model)
+            grads_i = torch.autograd.grad(loss_i, model.parameters(), create_graph=True)
+        
+            # Flatten and concatenate the gradients
+            grads_i_flat = torch.cat([g.view(-1) for g in grads_i if g is not None])
+        
+            # Append the gradients to the list
+            grads.append(grads_i_flat)
+
+        grads_matrix = torch.stack(grads).detach().cpu().numpy()
+        grads_matrix = np.transpose(grads_matrix)
+    
+        grads_D_np = grads_D.detach().cpu().numpy()
+        # grads_X_np = grads_X.detach().cpu().numpy()
+        # grads_X_np = grads_X_np.reshape(-1, 1)
+
+        # print(f"shape of grads X np is: {grads_matrix.shape}")
+        # print(f"shape of grads D np is: {grads_D_np.shape}")
+
+        n_features = X_y.size(0)
+        # print(f"# desired non_zero elems: {n_features}")
+
+        omp = OrthogonalMatchingPursuit(n_nonzero_coefs = n_features)  # Adjust the number of non-zero coefficients as needed
+        # omp = OrthogonalMatchingPursuit()
+        omp.fit(grads_matrix, grads_D_np)
+
+        w = omp.coef_
+        return w
+
+        # self.orthogonalmp(grads_X, grads_D)
+         
+
+
+    def orthogonalmp(self, mat_a, b, tol=1e-4, nnz=None, positive=False):
+        """approximately solves min_x |x|_0 s.t.
+
+        Ax=b using Orthogonal Matching Pursuit
+
+        Args:
+            mat_a: design matrix of size (d, n)
+            b: measurement vector of length d
+            tol: solver tolerance
+            nnz: maximum number of nonzero coefficients (if None set to n)
+            positive: only allow positive nonzero coefficients
+
+        Returns:
+            vector of length n
+        """
+
+        mat_at = mat_a.T
+        _, n = mat_a.shape
+        if nnz is None:
+            nnz = n
+        x = np.zeros(n)
+        resid = np.copy(b)
+        normb = norm(b)
+        indices = []
+        x_i = []
+        for _ in range(nnz):
+            if norm(resid) / normb < tol:
+                break
+                projections = mat_at.dot(resid)
+            if positive:
+                index = np.argmax(projections)
+            else:
+                index = np.argmax(abs(projections))
+            if index in indices:
+                break
+            indices.append(index)
+            mat_ai = None
+            if len(indices) == 1:
+                mat_ai = mat_a[:, index]
+                x_i = projections[index] / mat_ai.T.dot(mat_ai)
+            else:
+                mat_ai = np.vstack([mat_ai, mat_a[:, index]])
+                x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
+                if positive:
+                    while min(x_i) < 0.0:
+                        argmin = np.argmin(x_i)
+                        indices = indices[:argmin] + indices[argmin + 1 :]
+                        mat_ai = np.vstack([mat_ai[:argmin], mat_ai[argmin + 1 :]])
+                        x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
+            resid = b - mat_ai.T.dot(x_i)
+
+        for i, index in enumerate(indices):
+            try:
+                x[index] += x_i[i]
+            except IndexError:
+                x[index] += x_i
+        return x
+
+
+    # def minimize_l_sub(self, D_x, D_y, W_D, X_y, Y_y, X_y_w, model):
+    #     # X_y_w = X_y_w.clone().detach().requires_grad_(True)
+
+    #     optimizer = torch.optim.Adam([X_y_w], lr=0.005)
+
+    #     prev_grad = None
+    #     epsilon = 0.1  # Percent difference threshold
+    #     iteration = 0
+    #     continue_optimization = True
+
+    #     while continue_optimization:
+    #         optimizer.zero_grad()
+    #         loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, X_y_w, model)
+    #         loss.backward(retain_graph=True)
+
+    #         if torch.norm(X_y_w.grad) > 100000:
+    #             torch.nn.utils.clip_grad_norm_(X_y_w, 1000)
+    #             print(f"Clipped gradients")
+
+    #         if iteration % 10 == 0:
+    #             print(f"grad after loss backward: {X_y_w.grad}")
+
+    #         optimizer.step()
+            
+    #         if iteration >= 100:
+    #             if prev_grad is not None:
+    #                 # Calculate the percent difference
+    #                 percent_diff = torch.abs((X_y_w.grad - prev_grad) / prev_grad * 100)
+    #                 if torch.all(percent_diff < epsilon):
+    #                     continue_optimization = False
+
+    #         prev_grad = X_y_w.grad.clone()  # Update the previous gradient
+    #         iteration += 1
+
+    #         if iteration >= 1000:
+    #             break  # Fallback in case the threshold is never met
+
+
+        # for i in range(500):  # Number of optimization steps
+        #     optimizer.zero_grad()
+        #     loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, X_y_w, model)
+        #     loss.backward(retain_graph=True)  
+
+        #     if i % 100 == 0:
+        #         print(f"grad after loss backward: {X_y_w.grad}")
+        #     optimizer.step()
+
+        return X_y_w
 
 
 
@@ -609,6 +707,7 @@ class ContinualLearningManager(ABC):
             label_weights = torch.from_numpy(label_weights).float().to(DEVICE)
         else:
             # load data and labels
+            
             train_dataloader, _ = self._get_task_dataloaders(
                     use_memory_set=True, batch_size=64, full_batch = True, shuffle = False, use_random_img = use_random_img
                 )
@@ -616,15 +715,27 @@ class ContinualLearningManager(ABC):
         # set model to eval, define loss fn
         model.train()
         model.to(DEVICE)
+        # #GCR to change
+        # if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+        #     sample_weights = torch.ones(batch_x.shape[0]).to(DEVICE) # is this ok to do 
+        #     criterion = nn.CrossEntropyLoss(weight = label_weights, sample_weights)
+        # else: 
         criterion = nn.CrossEntropyLoss(weight = label_weights)
 
         batch_index = 0
         # loop through batches; should only be 1 batch right now
+        
+
         for batch_x, batch_y in train_dataloader:
 
             # i think we need to zero gradients here as well? not sure if param grad also accumulates without optimizer
             for param in model.parameters():
                 param.grad = None
+
+            #GCR addition
+            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+                batch_x, memory_set_weights = batch_x[:, :-1], batch_x[:, -1]
+                print("Memory set weights in compute_gradients_at_ideal: ", memory_set_weights)  # Print for debugging
 
             batch_x = batch_x.to(DEVICE)
             batch_y = batch_y.to(DEVICE)
@@ -635,7 +746,13 @@ class ContinualLearningManager(ABC):
             outputs_splice = outputs[:, current_labels]
             #print(outputs_splice.type(), batch_y.type())
             print("before evaluate")
+            
+            #GCR addition
+            # if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+            #     loss = self.gcr_loss(outputs_splice, batch_y, memory_set_weights, label_weights)
+            # else:
             loss = criterion(outputs_splice, batch_y)
+
             print("after evaluate")
             loss.backward()
 
@@ -711,6 +828,28 @@ class ContinualLearningManager(ABC):
 
 
         return None
+    
+    def sample_weighted_cross_entropy(self, x, y, label_weights, sample_weights):
+        x = x.to(DEVICE)
+        y = y.to(DEVICE)
+        sample_weights = sample_weights.to(DEVICE)
+        label_weights = label_weights.to(DEVICE)
+
+        logits = self.model(x)
+        loss_per_sample = F.cross_entropy(logits, y, weight=label_weights, reduction='none')
+        weighted_loss = loss_per_sample * sample_weights
+        return weighted_loss.mean()
+    
+
+    def gcr_loss(self, outputs, batch_y, sample_weights, use_weights=False, label_weights=None):
+        """Custom GCR loss function."""
+        if use_weights:
+            per_sample_loss = nn.CrossEntropyLoss(weight=label_weights, reduction='none')(outputs, batch_y)
+        else:
+            per_sample_loss = nn.CrossEntropyLoss(reduction='none')(outputs, batch_y)
+
+        weighted_loss = (per_sample_loss * sample_weights).mean() #or sum?
+        return weighted_loss
 
     def train(
         self,
@@ -743,15 +882,37 @@ class ContinualLearningManager(ABC):
             use_memory_set, batch_size
         )
         current_labels = list(self._get_current_labels())
-
+        # print(f"Training on task index: {self.task_index}")
+        # print(f"Current labels: {current_labels}")
+        # print(f"Train dataloader length: {len(train_dataloader)}")
+        # print(f"Train dataloader length: {len(test_dataloader)}")
         #create label weights
+
+        print("IN TRAIN")
+        # print(f"Number of memory set weights: {len(self.tasks[self.task_index].memory_set_weights)}")
+        # print(f"Memory set weights: {self.tasks[self.task_index].memory_set_weights}")
+
+        print(f"first memory set weights in TRAIN:{self.tasks[0].get_memory_set_weights()} of length {len(self.tasks[0].get_memory_set_weights())}")
+        print(f"latest memory set weights in TRAIN:{self.tasks[self.task_index - 1].get_memory_set_weights()}of length {len(self.tasks[self.task_index - 1].get_memory_set_weights())}")
         if use_weights:
             label_weights = np.ones(len(current_labels))
             label_weights[:-1] = 1/p
             label_weights = torch.from_numpy(label_weights).float().to(DEVICE)
-            criterion = nn.CrossEntropyLoss(weight = label_weights)
+
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+            # GCR-Specific Weighted Loss Function
+            def gcr_loss(outputs, batch_y, sample_weights):
+                if use_weights:
+                    per_sample_loss = nn.CrossEntropyLoss(weight=label_weights, reduction='none')(outputs, batch_y)
+                else:
+                    per_sample_loss = nn.CrossEntropyLoss(reduction='none')(outputs, batch_y)
+
+                weighted_loss = (per_sample_loss * sample_weights).mean()
+                return weighted_loss
+
+            criterion = self.gcr_loss
         else:
-            criterion = nn.CrossEntropyLoss()
+            criterion = nn.CrossEntropyLoss(weight=label_weights if use_weights else None)
 
         # Train on batches
         #criterion = nn.CrossEntropyLoss(weight = label_weights)  # CrossEntropyLoss for classification tasks
@@ -769,10 +930,33 @@ class ContinualLearningManager(ABC):
         callbacks = {'loss': []}
         for _ in tqdm(range(epochs)):
             total_loss = 0
+            print("in for loop over batches")
+            #to print
+            #for batch_x, batch_y in train_dataloader:
+                #print("length of dataset in data loader train", len(train_dataloader.dataset))
+                #print("length of batch_x", len(batch_x))
+                #print(f"batch x shape: {batch_x.shape}, batch y shape: {batch_y.shape}")
+                #print(f"batch x[0] shape: {batch_x[0].shape}, batch y[0] shape: {batch_y[0].shape}")
+                #break
+
+            #to print
+
+            print ("length of train full task dataloader: ", len(train_dataloader))
             for batch_x, batch_y in train_dataloader:
+
+                # print("length of dataset in data loader train", len(train_dataloader.dataset))
+                # print("length of batch_x", len(batch_x))
+                # print(f"batch x shape: {batch_x.shape}, batch y shape: {batch_y.shape}")
+
 
                 batch_x = batch_x.to(DEVICE)
                 batch_y = batch_y.to(DEVICE)
+                sample_weights = None  # Initialize (not needed for non-GCR)
+
+                # Extract weights for GCR
+                if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+                    batch_x, sample_weights = batch_x[:, :-1], batch_x[:, -1]  # Split data and weights
+                    # print("batch_x shape in train", batch_x.shape)
 
                 optimizer.zero_grad()
                 # Forward pass
@@ -782,9 +966,13 @@ class ContinualLearningManager(ABC):
                     :, current_labels
                 ]  # Only select outputs for current labels
 
+                # print(f"length of outputs: {len(outputs)}")
                 #print(outputs.get_device())
                 #print(batch_y.get_device())
-                loss = criterion(outputs, batch_y)
+                
+                #GCR addition 
+                loss = criterion(outputs, batch_y, sample_weights) if sample_weights is not None else criterion(outputs, batch_y)
+
                 total_loss += loss.detach().cpu()
                 # Backward pass and optimize
                 loss.backward()
@@ -839,9 +1027,7 @@ class ContinualLearningManager(ABC):
 
         # evaluate model 
         test_acc, test_backward_transfer = self.evaluate_task(test_dataloader, p = p)
-
-        # pass every item through GSS
-        # now, we should also update the memory set of the current task for use in next task
+        print("Calling update memory set function from train")
         self.update_memory_set(self.model, p)
 
         return test_acc, test_backward_transfer 
@@ -970,8 +1156,7 @@ class ContinualLearningManager(ABC):
         return task
 
     def _get_task_dataloaders(
-        self, use_memory_set: bool, batch_size: int, full_batch: bool = False, shuffle = True, use_random_img = False
-    ) -> Tuple[DataLoader, DataLoader]:
+        self, use_memory_set: bool, batch_size: int, full_batch: bool = False, shuffle = True, use_random_img = False) -> Tuple[DataLoader, DataLoader]:
         """Collect the datasets of all tasks <= task_index and return it as a dataloader.
 
         Args:
@@ -981,6 +1166,7 @@ class ContinualLearningManager(ABC):
             Tuple of train dataloader then test dataloader.
         """
 
+        print("IN GETTING TASK LOADERS")
         # Get tasks
         running_tasks = self.tasks[: self.task_index + 1]
         for task in running_tasks:
@@ -1020,6 +1206,8 @@ class ContinualLearningManager(ABC):
             [getattr(task, test_y_attr) for task in running_tasks]
         )
 
+        print(f"shape x before adding weights{combined_train_x.shape}")
+
         # Identify the labels for the combined dataset
         # TODO use this later
         combined_labels = set.union(*[task.task_labels for task in running_tasks])
@@ -1027,23 +1215,60 @@ class ContinualLearningManager(ABC):
         # Randomize the train dataset
         n = combined_train_x.shape[0]
         perm = torch.randperm(n)
+
+
+        # GCR addition
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+
+            memory_set_weights = torch.cat(
+            [getattr(task, "memory_set_weights") for task in memory_tasks]
+            + [getattr(terminal_task, "train_weights")]
+        )
+            print(f"memory set weights in get_task_dataloaders: {len(memory_set_weights)}")
+            print("shape of comined x before:" , combined_train_x.size())
+            combined_train_x = combined_train_x[perm]
+            
+
+            combined_train_y = combined_train_y[perm]
+            memory_set_weights = memory_set_weights[perm]
+
+            combined_train_x = torch.cat(
+                [combined_train_x, memory_set_weights.unsqueeze(1)], dim=1
+            )
+
+            test_weights = torch.cat(
+                [getattr(task, "test_weights") for task in running_tasks]
+            )
+            for task in running_tasks:
+               test_w = getattr(task, "test_weights")
+               test_x = getattr(task, "test_x")
+            #    print("length of test weights: ", len(test_w))
+            #    print("length test x: ", len(test_x))
+                
+            
+            # print(f"in get dataloaders: test_weights lenth {len(test_weights)}")
+            # print(f"combined_test_x lenth {len(combined_test_x)}")
+            combined_test_x = torch.cat(
+                [combined_test_x, test_weights.unsqueeze(1)], dim=1
+            )
+            
+
+        else:
+            combined_train_x = combined_train_x[perm]
+            combined_train_y = combined_train_y[perm]
+
         combined_train_x = combined_train_x[perm]
         combined_train_y = combined_train_y[perm]
-
-        #print('old combined train x shape: ', combined_train_x.shape)
 
         # if use random img, make all images random
         if use_random_img:
             x_shape, x_type = combined_train_x.size(), combined_train_x.dtype
             combined_train_x = torch.rand(*x_shape, dtype = x_type)
 
-        #print('new combined train x shape: ', combined_train_x.shape)
-        #assert(False)
-        
-
         # Put into batches
         train_dataset = TensorDataset(combined_train_x, combined_train_y)
         test_dataset = TensorDataset(combined_test_x, combined_test_y)
+
         if full_batch:
             train_dataloader = DataLoader(
                 train_dataset, batch_size=len(train_dataset), shuffle=True
@@ -1055,6 +1280,9 @@ class ContinualLearningManager(ABC):
             )
             test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
+        
+        print("shape of comined x:" , combined_train_x.size())
+        print("returning full data loaders for all data up to task")
         return train_dataloader, test_dataloader
     
     def _get_grad_eval_dataloaders(
@@ -1141,6 +1369,7 @@ class ContinualLearningManager(ABC):
             Tuple of train dataloader then test dataloader.
         """
 
+        print("IN TERMINAL TASK LOADERS")
         # Get terminal task
         terminal_task = self.tasks[self.task_index]
 
@@ -1155,11 +1384,28 @@ class ContinualLearningManager(ABC):
             [getattr(terminal_task, terminal_y_attr)]
         )
 
+        # GCR addition
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+            train_weights = terminal_task.get_train_weights()
+            if train_weights is not None:
+                # print("Memory set weights in terminal task loader: ", memory_set_weights)
+                # print(f"Size of combined_train_x: {combined_train_x.size()}")
+                # print(f"Size of memory_set_weights: {train_weights.size()}")
+                
+                combined_train_x = torch.cat([combined_train_x, train_weights.unsqueeze(1)], dim=1) 
+                # print(f"Size of combined_train_x after concatenation: {combined_train_x.size()}")
+
         # Randomize the train dataset
         n = combined_train_x.shape[0]
         perm = torch.randperm(n)
         combined_train_x = combined_train_x[perm]
         combined_train_y = combined_train_y[perm]
+
+         #GCR addition -- permute memowry set 
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and train_weights is not None:
+            train_weights = train_weights[perm]
+            # reconcatenate weights after permutation 
+            combined_train_x = torch.cat([combined_train_x[:, :-1], train_weights.unsqueeze(1)], dim=1) 
 
         # Getting batch size
         if full_batch:
@@ -1167,7 +1413,11 @@ class ContinualLearningManager(ABC):
         else:
             batch_size = batch
 
-        print(f"batch size in managers is {batch_size}")
+        # print(f"Size of combined_train_x: {combined_train_x.size()}")
+        # print(f"Size of combined_train_y: {combined_train_y.size()}")
+        # print(f"Batch size: {batch_size}")
+
+        # print(f"batch size in managers is {batch_size}")
 
         # Put into batches and create Tensor Dataset
         train_dataset = TensorDataset(combined_train_x, combined_train_y)
@@ -1175,6 +1425,7 @@ class ContinualLearningManager(ABC):
             train_dataset, batch_size=batch_size, shuffle=True
         )
 
+        # print("returning data loaders")
         return train_dataloader
     
     def _get_task_dataloaders_new_loss(

@@ -1,7 +1,7 @@
 from typing import Dict, Union
 
 from data import RandomMemorySetManager, KMeansMemorySetManager, LambdaMemorySetManager, \
-    GSSMemorySetManager, ClassBalancedReservoirSampling, iCaRL
+    GSSMemorySetManager, ClassBalancedReservoirSampling, iCaRL, GCRMemorySetManager
 from managers import (
     MnistManagerSplit,
     Cifar10ManagerSplit,
@@ -77,6 +77,8 @@ class Config:
                     setattr(self, key, ClassBalancedReservoirSampling)
                 elif val == "iCaRL":
                     setattr(self, key, iCaRL)
+                elif val == "GCR":
+                    setattr(self, key, GCRMemorySetManager)
                 else:
                     raise ValueError(
                         f"{val} memory set manager is not valid"

@@ -84,7 +84,9 @@ class RandomMemorySetManager(MemorySetManager):
         memory_x = x[memory_set_indices]
         memory_y = y[memory_set_indices]
 
-        print(f"Shape of memory set is: {memory_x.shape}") # erik was just debugging some stuff
+        # print(f"Shape of memory set in data.py is: {memory_x.shape}") # erik was just debugging some stuff
+        # print(f"Memory set size in data.py is: {memory_set_size}")
+        # print("random memory set created in data.py")
         return memory_x, memory_y
 
 #THEODORA K-MEANS
@@ -932,5 +934,41 @@ class iCaRL(MemorySetManager):
         print("constructed the new memory set")
         
         self.first_task = False
-
+        
         return coreset, coreset_labels
+
+
+
+class GCRMemorySetManager(MemorySetManager):
+    def __init__(self, p: float, random_seed: int = 42):
+        """
+        Args:
+            p: fraction of task dataset to be included in replay buffer.
+        """
+        self.p = p
+        self.generator = torch.Generator().manual_seed(random_seed)
+        np.random.seed(random_seed)
+        self.alpha = 0.1
+        self.beta = 0.1
+        self.gamma = 1.5
+        self.lambda_val = 1  # need to figure out this hyperparameter
+
+    def create_memory_set(
+        self, x: Float[Tensor, "n f"], y: Float[Tensor, "n"]
+    ) -> Tuple[Float[Tensor, "m f"], Float[Tensor, "m"]]:
+        """Initializes an empty memory replay buffer if training, called when task objects are created
+        Else, use GCR to generate memory set
+
+        Args:
+            x: x data.
+            y: y data.
+        Return:
+            (x_mem, y_mem) tuple.
+        """
+        self.memory_set_size = int(x.shape[0] * self.p)
+        if self.p == 1:
+            return x, y
+        
+        # print(f"Shape of memory set in data.py is: {memory_x.shape}") # erik was just debugging some stuff
+        print(f"Memory set size in data.py is: {self.memory_set_size}")
+        return torch.empty(0), torch.empty(0)
