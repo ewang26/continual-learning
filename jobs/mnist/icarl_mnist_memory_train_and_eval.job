@@ -1,9 +1,8 @@
 #!/bin/bash
 #SBATCH -n 1
 #SBATCH -N 1
-#SBATCH -p gpu
-#SBATCH -t 0-10:00
-#SBATCH --mem=1000
+#SBATCH -t 3-00:00
+#SBATCH --mem=10000
 #SBATCH -p shared
 #SBATCH --job-name=continual_learning
 #SBATCH -o logs/train_eval_%j.out
