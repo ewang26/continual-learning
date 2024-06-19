@@ -39,7 +39,7 @@ source "${VENV_PATH}/bin/activate"
 
 # Run iCaRL training and evaluation
 python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mnist_grad_eval.yaml
-python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mnist_train.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mnist_train.yaml
 
 # # Run random training and evaluation
 # python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/random/config_cifar10_grad_eval.yaml
@@ -48,5 +48,5 @@ python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mni
 
 
 # # Run additional script for saving similarity blocks
-python ${MAIN_PATH}/save_similarity_block_v2.py --config ${MAIN_PATH}/configs/grad_eval/mnist_icarl.yaml
+# python ${MAIN_PATH}/save_similarity_block_v2.py --config ${MAIN_PATH}/configs/grad_eval/mnist_icarl.yaml
 deactivate
