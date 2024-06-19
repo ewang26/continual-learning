@@ -50,6 +50,10 @@ class Task:
         print(f"Train memory set shape in tasks.py is: {self.memory_x.shape}")
         print(f"Train memory set length in tasks.py is: {len(self.memory_y)}")
 
+        self.train_weights = torch.ones(self.train_x.shape[0])
+        self.memory_set_weights = torch.ones(self.memory_x.shape[0])
+        self.test_weights = torch.ones(self.test_x.shape[0])
+
         if memory_set_manager.__class__.__name__ == 'GSSMemorySetManager':
             self.memory_set_manager = memory_set_manager # save the manager for future use
             self.C_arr = np.array([]) # initialize score array for memory set. i can use to initiaze for weights. 
@@ -59,7 +63,8 @@ class Task:
 
         if memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
             self.memory_set_manager = memory_set_manager
-            self.memory_set_weights = torch.ones(self.memory_x.shape[0])
+            # self.train_weights = torch.ones(self.train_x.shape[0])
+            # self.memory_set_weights = torch.ones(self.memory_x.shape[0])
             print("empty memory set weights initialized in tasks.py")
             print("Memory set weights shape in tasks: ", self.memory_set_weights)
             # self.memory_z = torch.empty(0)
@@ -93,6 +98,7 @@ class Task:
             # print("weights that have been passed in tasks:")
             # print(weights)
             self.memory_set_weights = weights
+        
             #print("Memory set weights updated in tasks.py")
             #print("Memory set weights shape in tasks: ", self.memory_set_weights)
         else:
@@ -114,6 +120,12 @@ class Task:
     def get_memory_set_weights(self):
         if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
             return self.memory_set_weights
+        else:
+            raise NotImplementedError("Only GCR Memory Selection method returns memory set weights in runtime.")
+        
+    def get_train_weights(self):
+        if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
+            return self.train_weights
         else:
             raise NotImplementedError("Only GCR Memory Selection method returns memory set weights in runtime.")
 
