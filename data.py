@@ -622,7 +622,7 @@ class ClassBalancedReservoirSampling:
 
 
 # Hyper Parameters
-num_epochs = 1
+num_epochs = 50
 batch_size = 64
 learning_rate = 0.002
 
@@ -634,7 +634,7 @@ class iCaRLNet(nn.Module):
         self.feature_extractor.fc = nn.Linear(self.feature_extractor.fc.in_features, feature_size)
         self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
         self.ReLU = nn.ReLU()
-        self.fc = nn.Linear(feature_size, n_classes, bias=False)
+        self.fc = nn.Linear(feature_size, n_classes)
         self.grayscale_to_rgb = transforms.Compose([transforms.Lambda(lambda x: torch.cat([x, x, x], dim=1))])
 
         self.n_classes = 0
@@ -676,13 +676,14 @@ class iCaRLNet(nn.Module):
         out_features = self.fc.out_features
         #WP: don't forget the biases: self.fc.bias.data
         weight = self.fc.weight.data
-        # biases = self.fc.bias.data
+        bias = self.fc.bias.data
 
         #WP: check that adding the new heads is correct (i.e. why bias=False)
         # self.fc = nn.Linear(in_features, out_features+n)
         # self.fc.bias.data[:out_features] = biases
-        self.fc = nn.Linear(in_features, out_features+n, bias=False)
+        self.fc = nn.Linear(in_features, out_features+n)
         self.fc.weight.data[:out_features] = weight
+        self.fc.bias.data[:out_features] = bias
 
         self.n_classes += n
 
@@ -694,6 +695,7 @@ class iCaRLNet(nn.Module):
             images: torch tensor containing images of a class
         """
 
+        exemplar_indices = []
         features = []
         self.feature_extractor.eval()
         with torch.no_grad():  
@@ -702,16 +704,13 @@ class iCaRLNet(nn.Module):
             # breakpoint()
             norms = torch.norm(features, dim=1, keepdim=True)  # Shape [n_images, 1]
             normalized_features = features / norms  # broadcasting the division. will have shape [12665, 2048]
-
-            features = normalized_features[:, 0] # This will have shape [12665]
         
-        features = torch.tensor(features).to(DEVICE) 
+        features = torch.tensor(normalized_features).to(DEVICE) 
         class_mean = torch.mean(features, axis=0)  
         class_mean_norm = torch.linalg.norm(class_mean) # Do I need to compute the norm of this? class_mean will be a scalar
         class_mean = class_mean / class_mean_norm # normalize
 
         exemplar_set = []
-        exemplar_label = []
         exemplar_features = [] # list of Variables of shape (feature_size,)
         sum_inner = torch.zeros_like(class_mean).to(DEVICE) # base case for when there are no exemplars yet (k=0)
 
@@ -723,24 +722,31 @@ class iCaRLNet(nn.Module):
   
                 coefficient = 1/(k+1)
                 sum_outer = feature_x + sum_inner
-                sum_outer = coefficient * sum_outer
+                coeff_sum_outer = coefficient * sum_outer
 
-                normed_val = torch.linalg.norm(class_mean - sum_outer)
+                normed_val = torch.linalg.norm(class_mean - coeff_sum_outer)
 
                 if normed_val < min_val:
                     min_val = normed_val
                     arg_min_i = i
+            
+            print(f"\narg_min_i is: {arg_min_i}")
 
             # breakpoint()
             exemplar_set.append(images[arg_min_i])
             exemplar_features.append(features[arg_min_i])
-            exemplar_label.append(labels[arg_min_i])
+            exemplar_indices.append(arg_min_i)
 
             print(f"Shape of exemplar_features is: {torch.stack(exemplar_features).shape}")
-            sum_inner = sum_inner.squeeze() + torch.stack(exemplar_features).sum(0)
+            # sum_inner can be updated by adding the new exemplar image (i.e., features[arg_min_i])
+            sum_inner = sum_inner + features[arg_min_i]
+            # breakpoint()
 
+        # Updating the class variables
         self.exemplar_sets.append(torch.stack(exemplar_set)) # self.exemplar_sets should be a list of tensors
-        self.exemplar_labels.append(torch.stack(exemplar_label))
+        self.exemplar_labels.append(labels[:m])
+        return torch.tensor(exemplar_indices) # only need to return the indices of selected elements from the class data
+        # return torch.stack(exemplar_set), labels[:m]
 
 
     def combine_exemplar_sets(self):
@@ -831,8 +837,8 @@ class iCaRLNet(nn.Module):
 
         else:
             # icarl loss
+            # access the old weights before training
             old_weights = self.state_dict()
-            # instead of doing q here
             for epoch in range(num_epochs):
                 for batch_xs, batch_ys in all_dataloader:
                     optimizer.zero_grad()
@@ -881,15 +887,16 @@ class iCaRL(MemorySetManager):
         """ Create or update memory set for new tasks """
         print(f"x.shape of incoming task data is {x.shape}, y.shape is {y.shape}")
 
+        x_original = x # making a copy to select the right images
+
         transform_test = transforms.Compose([
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
         # set the memory set size according to the size of the first task
         # MNIST has variable task sizes, so always use the first task size
         if self.first_task: 
-            self.memory_set_size = int(self.p * len(x)) 
+            self.memory_set_size = int(self.p * len(x) / 2) # divide by two because we construct a coreset for each class
             print(f"memory set size is {self.memory_set_size}")
-
 
         if x.dim() == 2: # only reshape and duplicate color channel if MNIST
             x = x.view(-1, 28, 28)
@@ -904,16 +911,33 @@ class iCaRL(MemorySetManager):
 
         print("updated representation")
 
-        self.net.construct_exemplar_set(x, y, self.memory_set_size, transform_test)  # update the exemplar set for the new class
-        # print(f"shape of memory set after construction is: {np.array(self.net.exemplar_sets).shape}")
-        print(f"memory set after construction is: {self.net.exemplar_sets[-1].shape}")
+        classes = torch.unique(y)
+        coreset_images = []
+        coreset_labels = []
+
+        for cls in classes:
+            class_mask = (y == cls)
+            class_images = x[class_mask]
+            class_labels = y[class_mask]
+            
+            print(f"Starting selection for class {cls.item()}")
+            coreset_indices = self.net.construct_exemplar_set(class_images, class_labels, self.memory_set_size, transform_test)
+            
+            coreset_images.append(x_original[coreset_indices])
+            coreset_labels.append(y[coreset_indices])
+
+        coreset = torch.cat(coreset_images)
+        coreset_labels = torch.cat(coreset_labels)
+        print(f"coreset after construction has shape: {coreset.shape}, {coreset_labels.shape}")
+        print(f"\nmemory set after construction is: {self.net.exemplar_sets[-1].shape}")
 
         print("constructed the new memory set")
         
         self.first_task = False
+        
+        return coreset, coreset_labels
 
-        return self.net.exemplar_sets[-1], self.net.exemplar_labels[-1]
-        # should these be tensors?
+
 
 class GCRMemorySetManager(MemorySetManager):
     def __init__(self, p: float, random_seed: int = 42):
