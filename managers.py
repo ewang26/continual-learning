@@ -1772,6 +1772,23 @@ class Cifar10Manager(ContinualLearningManager, ABC):
         train_x, train_y = convert_torch_dataset_to_tensor(trainset, flatten=False)
         test_x, test_y = convert_torch_dataset_to_tensor(testset, flatten=False)
 
+        toy_dataset = True
+
+        if toy_dataset:
+            # Create a class-balanced version of a small dataset
+            num_classes = 10
+            num_samples_per_class = 10  # Adjust as needed for the desired size
+
+            indices = []
+            for i in range(num_classes):
+                class_indices = (train_y == i).nonzero(as_tuple=True)[0]
+                sampled_indices = class_indices[:num_samples_per_class]
+                indices.extend(sampled_indices.tolist())
+
+            train_x = train_x[indices]
+            train_y = train_y[indices]
+        
+        
         return train_x, train_y.long(), test_x, test_y.long()
 
 
@@ -1898,7 +1915,7 @@ class MnistManager(ContinualLearningManager, ABC):
         if toy_mnist:
             # Create a class-balanced version of a small dataset
             num_classes = 10
-            num_samples_per_class = 10  # Adjust as needed for the desired size
+            num_samples_per_class = 10 
 
             indices = []
             for i in range(num_classes):
@@ -1908,8 +1925,6 @@ class MnistManager(ContinualLearningManager, ABC):
 
             train_x = train_x[indices]
             train_y = train_y[indices]
-
-        # toy dataset
             
         return train_x, train_y.long(), test_x, test_y.long()
 
