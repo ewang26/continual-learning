@@ -345,7 +345,6 @@ class ContinualLearningManager(ABC):
         
         # initialize dataset weights to ones, and partitioned into tasks
         D_w_y = [torch.ones_like(subtensor) for subtensor in D_y_y]
-        # print(f"Checking D_w_y: {len(D_w_y[0])} and {len(D_w_y[1])}")
 
         if len(batch_x.shape) == 4:
             memory_x = torch.empty((0, batch_x.size(1), batch_x.size(2), batch_x.size(2))) 
@@ -358,8 +357,6 @@ class ContinualLearningManager(ABC):
 
         for y in range(Y): #EW this corresponds to line 5 in algorithm 2
             k_y = self.memory_set_manager.memory_set_size // Y
-
-            # print(f"Class number within task is {y}")
 
             if len(batch_x.shape) == 4:
                 X_y = torch.empty((0, batch_x.size(1), batch_x.size(2), batch_x.size(2)), requires_grad=True) 
@@ -455,7 +452,7 @@ class ContinualLearningManager(ABC):
         inputs_X = self.l_rep(X_y, Y_y, W_X_y, model)
         grads_X = torch.autograd.grad(inputs_X, model.parameters(), create_graph=True)
         grads_X = torch.cat([g.view(-1) for g in grads_X if g is not None])
-        
+
         regularization_term = 0.001 * W_X_y.norm()**2
 
         # Compute the norm of the gradient difference squared
