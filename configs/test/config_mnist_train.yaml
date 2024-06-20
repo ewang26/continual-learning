@@ -5,7 +5,7 @@ wandb_profile: alanhsu
 
 
 # Memory set hyperparameters
-memory_set_manager: kmeans
+memory_set_manager: GCR
 use_memory_set: True
 grad_type: None
 p: dummar_var
@@ -15,8 +15,8 @@ num_ideal_models: None
 device: cpu
 
 # for gradient evaluating
-p_arr: [0.001, 0.002]
-num_samples: [2, 2]
+p_arr: [0.001]
+num_samples: [1]
 #p_arr: [0.001, 1]
 #num_samples: [10, 10, 10, 10, 10, 10, 10, 10, 10]
 #num_samples: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -33,9 +33,10 @@ learning_manager: mnist_split
 
 # Training hyperparameters
 lr: 0.001
+#batch_size: 256
 batch_size: 256
 random_seed: 0xC0FFEE
-epochs: 50
+epochs: 2
 #epochs: 30
 
 # Model arch 
