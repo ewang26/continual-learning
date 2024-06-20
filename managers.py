@@ -968,10 +968,10 @@ class ContinualLearningManager(ABC):
                 #print(outputs.get_device())
                 #print(batch_y.get_device())
 
-                print(f"outputs shape: {outputs.shape}")
-                print(f"batch_y shape: {batch_y.shape}")
-                print(f"batch_y shape: {batch_x.shape}")
-                print(f"sample_weights shape: {sample_weights.shape}")
+                # print(f"outputs shape: {outputs.shape}")
+                # print(f"batch_y shape: {batch_y.shape}")
+                # print(f"batch_y shape: {batch_x.shape}")
+                # print(f"sample_weights shape: {sample_weights.shape}")
                 
                 #GCR addition 
                 loss = criterion(outputs, batch_y, sample_weights) if sample_weights is not None else criterion(outputs, batch_y)
@@ -1888,9 +1888,29 @@ class MnistManager(ContinualLearningManager, ABC):
             root=dataset_path, train=False, download=True, transform=transform
         )
 
+        
         test_x, test_y = convert_torch_dataset_to_tensor(testset, flatten=True)
         train_x, train_y = convert_torch_dataset_to_tensor(trainset, flatten=True)
 
+        toy_mnist = True
+
+        # toy dataset
+        if toy_mnist:
+            # Create a class-balanced version of a small dataset
+            num_classes = 10
+            num_samples_per_class = 10  # Adjust as needed for the desired size
+
+            indices = []
+            for i in range(num_classes):
+                class_indices = (train_y == i).nonzero(as_tuple=True)[0]
+                sampled_indices = class_indices[:num_samples_per_class]
+                indices.extend(sampled_indices.tolist())
+
+            train_x = train_x[indices]
+            train_y = train_y[indices]
+
+        # toy dataset
+            
         return train_x, train_y.long(), test_x, test_y.long()
 
 
