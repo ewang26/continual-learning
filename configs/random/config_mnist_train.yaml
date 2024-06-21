@@ -5,7 +5,7 @@ wandb_profile: alanhsu
 
 
 # Memory set hyperparameters
-memory_set_manager: random
+memory_set_manager: GCR
 use_memory_set: True
 grad_type: None
 p: dummar_var
@@ -26,8 +26,10 @@ num_ideal_models: None
 # num_samples: [1, 1, 1, 1, 1, 1, 1]
 
 #testing
-p_arr: [0.001]
+p_arr: [0.1]
 num_samples: [1]
+# toy_dataset: True
+# toy_dataset_size: 200
 
 #debugging 
 train_debug: False

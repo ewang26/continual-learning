@@ -27,7 +27,8 @@ class Config:
         self.memory_selection_method = self.config_dict['memory_set_manager']
         self.use_random_img = self.config_dict['use_random_img']
         self.num_ideal_models = self.config_dict['num_ideal_models']
-        #print(self.p_arr)
+        self.toy_dataset = config_dict.get('toy_dataset', False)
+        self.toy_dataset = config_dict.get('toy_dataset_size', 1000)
         
         #k-means addtions
         self.num_centroids = config_dict.get('num_centroids', 10)  # Default value is 10
@@ -138,3 +139,5 @@ def dict_to_config_string(config_dict: Dict[str, Union[str, int, float]]) -> str
     if config_string[-1] == "_":
         config_string = config_string[:-1]
     return config_string
+
+

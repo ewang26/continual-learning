@@ -46,9 +46,9 @@ class Task:
         self.task_labels = task_labels
         self.active = False
 
-        print("IN TASKS.PY")
-        print(f"Train memory set shape in tasks.py is: {self.memory_x.shape}")
-        print(f"Train memory set length in tasks.py is: {len(self.memory_y)}")
+        #print("IN TASKS.PY")
+        #print(f"Train memory set shape in tasks.py is: {self.memory_x.shape}")
+        #print(f"Train memory set length in tasks.py is: {len(self.memory_y)}")
 
         self.train_weights = torch.ones(self.train_x.shape[0])
         self.memory_set_weights = torch.ones(self.memory_x.shape[0])
@@ -65,8 +65,8 @@ class Task:
             self.memory_set_manager = memory_set_manager
             # self.train_weights = torch.ones(self.train_x.shape[0])
             # self.memory_set_weights = torch.ones(self.memory_x.shape[0])
-            print("empty memory set weights initialized in tasks.py")
-            print("Memory set weights shape in tasks: ", self.memory_set_weights)
+            # print("empty memory set weights initialized in tasks.py")
+            # print("Memory set weights shape in tasks: ", self.memory_set_weights)
             # self.memory_z = torch.empty(0)
 
         print("Memory created in tasks.py with number of samples (?): ", len(self.memory_x))

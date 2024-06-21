@@ -122,7 +122,6 @@ def main(config: Config):
                 use_wandb=config.use_wandb,
                 model=config.model,
             )
-
             epochs = config.epochs
             num_tasks = manager.num_tasks
 
@@ -213,7 +212,6 @@ def main(config: Config):
                         model_save_path = None
 
                     print(f"Training on Task {task_num}")
-                    print("About to start training")
                     acc, backward_transfer = manager.train(
                         epochs=epochs,
                         batch_size=config.batch_size,
@@ -231,7 +229,13 @@ def main(config: Config):
 
                      # for the sample, save accs in array and save in gradient path. eventually we push this to wandb
                     acc_save_path = model_train_save_dir
-                    np.save(f'{acc_save_path}/acc.npy', final_accs)
+                    use_saved_memory_set = True
+
+                    if use_saved_memory_set:
+                         np.save(f'{acc_save_path}/acc_saved_memory_set.npy', final_accs)
+                    else:
+                        np.save(f'{acc_save_path}/acc.npy', final_accs)
+
                     print(f'acc: {final_accs}')
 
 
