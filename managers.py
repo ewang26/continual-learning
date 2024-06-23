@@ -22,7 +22,9 @@ import torch.nn.functional as F
 import functools
 from functools import partial 
 from torch.utils.data import DataLoader, Subset, random_split
-
+from numpy.linalg import cond, inv, norm
+from scipy import sparse as sp
+from scipy.linalg import lstsq, solve
 
 
 from data import MemorySetManager
@@ -342,9 +344,12 @@ class ContinualLearningManager(ABC):
                     batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1] #GCR addition
                     batch_x.requires_grad=True
                     batch_y = batch_y.float()
+                    breakpoint()
                     batch_y.requires_grad=True 
                     print("before update")
                     self.update_memory_gcr(batch_x, batch_y, model) #its ok to not pass batch_w_x here, right?
+                    # Should be fine to not pass batch_w_x into update_memory_gcr because gradapprox doesn't use the weights
+                    # gradapprox only outputs new weights
                     print("after update")
 
     def update_memory_gcr(self, batch_x, batch_y, model):       
@@ -385,6 +390,7 @@ class ContinualLearningManager(ABC):
 
             # corresponds to line 7
             r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w, model)
+            breakpoint()
 
             e_indices = []
 
@@ -393,7 +399,7 @@ class ContinualLearningManager(ABC):
 
                 # print(f"Residuals at top: {r}")
                 e = torch.argmax(torch.abs(r))
-                # print(f"new e is: {e}")
+                print(f"new e is: {e}")
                 # print(f"residual {e}: {r[e]}")
                 e_indices.append(e)
 
@@ -402,22 +408,10 @@ class ContinualLearningManager(ABC):
 
                 W_X_y = self.minimize_l_sub_OMP(D_x_y[y], D_y_y[y], X_y, Y_y, model)
 
-                # Below is optimizing W_X_y
-                # one_tensor = torch.tensor([1.0], requires_grad=False).to(DEVICE)
-                # W_X_y = torch.cat((W_X_y, one_tensor))
-                # W_X_y_leaf = W_X_y.clone().detach().requires_grad_(True)
 
-                # # Calculate updated weights for coreset elements
-                # W_X_y_leaf = self.minimize_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y_leaf, model)
-                # W_X_y = W_X_y_leaf.detach()
-                # print(f"Memory data loss: {self.l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, W_X_y, model)}")
-                
-                
                 # Update full weights with new learned weights 
-                X_y_w_updated[torch.tensor(e_indices).to(DEVICE)] = torch.from_numpy(W_X_y).to(DEVICE)
-                # print(f"W_X_y is: {W_X_y} and len is {W_X_y.shape}")
-                # print(f"Memory data loss: {self.l_sub(D_x_y[y], D_y_y[y], D_w_y[y], X_y, Y_y, torch.from_numpy(W_X_y), model)}")
-                # print(f"Total data loss: {self.l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w_updated, model)}")
+                # breakpoint()
+                X_y_w_updated[torch.tensor(e_indices).to(DEVICE)] = W_X_y.to(DEVICE)
 
                 # Update residuals
                 r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w_updated, model)
@@ -426,7 +420,7 @@ class ContinualLearningManager(ABC):
             # Update the overall subset and weights
             memory_x = torch.cat((memory_x, X_y.cpu().detach()))
             memory_y = torch.cat((memory_y, Y_y.cpu().detach()))
-            memory_weights = torch.cat((memory_weights, torch.from_numpy(W_X_y)))
+            memory_weights = torch.cat((memory_weights, W_X_y))
 
         # Update the memory set with the selected subset and weights
         # self.tasks[self.task_index].memory_x = memory_x
@@ -552,55 +546,107 @@ class ContinualLearningManager(ABC):
         grads_matrix = np.transpose(grads_matrix)
     
         grads_D_np = grads_D.detach().cpu().numpy()
-        # grads_X_np = grads_X.detach().cpu().numpy()
-        # grads_X_np = grads_X_np.reshape(-1, 1)
 
-        # print(f"shape of grads X np is: {grads_matrix.shape}")
-        # print(f"shape of grads D np is: {grads_D_np.shape}")
-
-        n_features = X_y.size(0)
+        # n_features = X_y.size(0)
         # print(f"# desired non_zero elems: {n_features}")
 
-        omp = OrthogonalMatchingPursuit(n_nonzero_coefs = n_features)  # Adjust the number of non-zero coefficients as needed
+        # omp = OrthogonalMatchingPursuit(n_nonzero_coefs = n_features)  # Adjust the number of non-zero coefficients as needed
         # omp = OrthogonalMatchingPursuit()
-        omp.fit(grads_matrix, grads_D_np)
+        # omp.fit(grads_matrix, grads_D_np)
 
-        w = omp.coef_
-        return w
+        # w = omp.coef_
+        # return w
 
-        # self.orthogonalmp(grads_X, grads_D)
+        print(f"Shapes are grads_matrix: {grads_matrix.shape}, grads_D_np: {grads_D_np.shape}")
+
+        minimized_w = self.orthogonalmp(grads_matrix, grads_D_np)
+        return torch.from_numpy(minimized_w.astype(np.float32)) # return a tensor for convenience
          
 
 
-    def orthogonalmp(self, mat_a, b, tol=1e-4, nnz=None, positive=False):
-        """approximately solves min_x |x|_0 s.t.
+    # def orthogonalmp(self, mat_a, b, tol=1e-4, nnz=None, positive=False):
+    #     """approximately solves min_x |x|_0 s.t.
 
-        Ax=b using Orthogonal Matching Pursuit
+    #     Ax=b using Orthogonal Matching Pursuit
 
+    #     Args:
+    #         mat_a: design matrix of size (d, n)
+    #         b: measurement vector of length d
+    #         tol: solver tolerance
+    #         nnz: maximum number of nonzero coefficients (if None set to n)
+    #         positive: only allow positive nonzero coefficients
+
+    #     Returns:
+    #         vector of length n
+    #     """
+
+    #     mat_at = mat_a.T
+    #     _, n = mat_a.shape
+    #     if nnz is None:
+    #         nnz = n
+    #     x = np.zeros(n)
+    #     resid = np.copy(b)
+    #     normb = norm(b)
+    #     indices = []
+    #     x_i = []
+    #     for _ in range(nnz):
+    #         if norm(resid) / normb < tol:
+    #             break
+    #         projections = mat_at.dot(resid)
+    #         if positive:
+    #             index = np.argmax(projections)
+    #         else:
+    #             index = np.argmax(abs(projections))
+    #         if index in indices:
+    #             break
+    #         indices.append(index)
+    #         mat_ai = None
+    #         if len(indices) == 1:
+    #             mat_ai = mat_a[:, index]
+    #             x_i = projections[index] / mat_ai.T.dot(mat_ai)
+    #         else:
+    #             mat_ai = np.vstack([mat_ai, mat_a[:, index]])
+    #             x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
+    #             if positive:
+    #                 while min(x_i) < 0.0:
+    #                     argmin = np.argmin(x_i)
+    #                     indices = indices[:argmin] + indices[argmin + 1 :]
+    #                     mat_ai = np.vstack([mat_ai[:argmin], mat_ai[argmin + 1 :]])
+    #                     x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
+    #         resid = b - mat_ai.T.dot(x_i)
+
+    #     for i, index in enumerate(indices):
+    #         try:
+    #             x[index] += x_i[i]
+    #         except IndexError:
+    #             x[index] += x_i
+    #     return x
+
+    def orthogonalmp(self, A, b, tol=1E-4, nnz=None, positive=False):
+        '''approximately solves min_x |x|_0 s.t. Ax=b using Orthogonal Matching Pursuit
         Args:
-            mat_a: design matrix of size (d, n)
-            b: measurement vector of length d
-            tol: solver tolerance
-            nnz: maximum number of nonzero coefficients (if None set to n)
-            positive: only allow positive nonzero coefficients
-
+        A: design matrix of size (d, n)
+        b: measurement vector of length d
+        tol: solver tolerance
+        nnz = maximum number of nonzero coefficients (if None set to n)
+        positive: only allow positive nonzero coefficients
         Returns:
-            vector of length n
-        """
+        vector of length n
+        '''
 
-        mat_at = mat_a.T
-        _, n = mat_a.shape
+        AT = A.T
+        d, n = A.shape
         if nnz is None:
             nnz = n
         x = np.zeros(n)
         resid = np.copy(b)
         normb = norm(b)
         indices = []
-        x_i = []
-        for _ in range(nnz):
+
+        for i in range(nnz):
             if norm(resid) / normb < tol:
                 break
-                projections = mat_at.dot(resid)
+            projections = AT.dot(resid)
             if positive:
                 index = np.argmax(projections)
             else:
@@ -608,20 +654,19 @@ class ContinualLearningManager(ABC):
             if index in indices:
                 break
             indices.append(index)
-            mat_ai = None
             if len(indices) == 1:
-                mat_ai = mat_a[:, index]
-                x_i = projections[index] / mat_ai.T.dot(mat_ai)
+                A_i = A[:, index]
+                x_i = projections[index] / A_i.T.dot(A_i)
             else:
-                mat_ai = np.vstack([mat_ai, mat_a[:, index]])
-                x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
+                A_i = np.vstack([A_i, A[:, index]])
+                x_i = solve(A_i.dot(A_i.T), A_i.dot(b), assume_a='sym')
                 if positive:
                     while min(x_i) < 0.0:
                         argmin = np.argmin(x_i)
-                        indices = indices[:argmin] + indices[argmin + 1 :]
-                        mat_ai = np.vstack([mat_ai[:argmin], mat_ai[argmin + 1 :]])
-                        x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
-            resid = b - mat_ai.T.dot(x_i)
+                        indices = indices[:argmin] + indices[argmin + 1:]
+                        A_i = np.vstack([A_i[:argmin], A_i[argmin + 1:]])
+                        x_i = solve(A_i.dot(A_i.T), A_i.dot(b), assume_a='sym')
+            resid = b - A_i.T.dot(x_i)
 
         for i, index in enumerate(indices):
             try:
@@ -815,7 +860,7 @@ class ContinualLearningManager(ABC):
 
     def train(
         self,
-        epochs: int = 20,
+        epochs: int = 50,
         batch_size: int = 32,
         lr: float = 0.01,
         use_memory_set: bool = False,
@@ -862,6 +907,7 @@ class ContinualLearningManager(ABC):
         #create label weights
 
         print("IN TRAIN")
+        print(f"TRAINING EPOCHS SET TO {epochs}")
         
         # EW Note: based on line 225 in main_batch, use_weights is True
         if use_weights:
@@ -966,9 +1012,10 @@ class ContinualLearningManager(ABC):
 
             
             validation_acc, _ = self.evaluate_task(validation_dataloader, p=p)
-            if (validation_acc - past_validation_acc) / past_validation_acc * 100 < -5:
+            if (validation_acc - past_validation_acc) / past_validation_acc * 100 < -3:
                 # if the validation accuracy has decreased by more than 5%, then break out of the training loop
                 print(f"\nTOTAL NUMBER OF EPOCHS BEFORE BREAKING: {epoch}")
+                print(f"Difference in validation accs: {validation_acc - past_validation_acc}")
                 break
             print(f"Difference in validation accs: {validation_acc - past_validation_acc}")
             past_validation_acc = validation_acc
@@ -1263,7 +1310,7 @@ class ContinualLearningManager(ABC):
             use_memory_set: Whether to use the memory set for tasks < task_index.
             batch_size: Batch size to use for training.
         Returns:
-            Tuple of train dataloader then test dataloader.
+            Tuple of train dataloader then test dataloader. #EW: I think this should be the train dataloader only?
         """
 
         print("IN TERMINAL TASK LOADERS")
