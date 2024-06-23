@@ -14,9 +14,10 @@ num_ideal_models: None
 #num_samples: 10
 
 # for gradient evaluating
-p_arr: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
-num_samples: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-# p_arr: [0.001, 0.005, 0.01]
+#p_arr: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
+#num_samples: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+#p_arr: [0.001, 0.005, 0.01]
+p_arr: [0.001]
 # num_samples: [1, 1, 1]
 
 #debugging 
@@ -34,8 +35,9 @@ learning_manager: mnist_split
 lr: 0.001
 batch_size: 256
 random_seed: 0xC0FFEE
-epochs: 50
+# epochs: 50
 #epochs: 30
+epochs: 2
 
 # Model arch 
 model:

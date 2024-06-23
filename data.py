@@ -622,7 +622,7 @@ class ClassBalancedReservoirSampling:
 
 
 # Hyper Parameters
-num_epochs = 2
+num_epochs = 50
 batch_size = 64
 learning_rate = 0.002
 
