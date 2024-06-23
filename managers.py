@@ -336,15 +336,10 @@ class ContinualLearningManager(ABC):
                 # This is actually iterating once since batch_x/y is the full terminal task dataset
                 print("batch x length in update memory set from TERMINAL LOADER: ", len(terminal_train_dataloader))
                 for batch_x, batch_y in terminal_train_dataloader:
-                
-                    # batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-                    #grad_sample = self.get_forward_pass_gradients(batch_x, batch_y, model, criterion, current_labels)
-
                     
                     batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1] #GCR addition
                     batch_x.requires_grad=True
                     batch_y = batch_y.float()
-                    breakpoint()
                     batch_y.requires_grad=True 
                     print("before update")
                     self.update_memory_gcr(batch_x, batch_y, model) #its ok to not pass batch_w_x here, right?
@@ -396,11 +391,8 @@ class ContinualLearningManager(ABC):
 
             while len(X_y) <= k_y: 
                 # Find the data point with maximum residual
-
-                # print(f"Residuals at top: {r}")
                 e = torch.argmax(torch.abs(r))
                 print(f"new e is: {e}")
-                # print(f"residual {e}: {r[e]}")
                 e_indices.append(e)
 
                 X_y = torch.cat((X_y, D_x_y[y][e].unsqueeze(0)))
@@ -408,14 +400,11 @@ class ContinualLearningManager(ABC):
 
                 W_X_y = self.minimize_l_sub_OMP(D_x_y[y], D_y_y[y], X_y, Y_y, model)
 
-
                 # Update full weights with new learned weights 
-                # breakpoint()
                 X_y_w_updated[torch.tensor(e_indices).to(DEVICE)] = W_X_y.to(DEVICE)
 
                 # Update residuals
                 r = self.grad_l_sub(D_x_y[y], D_y_y[y], D_w_y[y], D_x_y[y], D_y_y[y], X_y_w_updated, model)
-                # print(f"Residuals at bottom: {r}")
 
             # Update the overall subset and weights
             memory_x = torch.cat((memory_x, X_y.cpu().detach()))
@@ -449,7 +438,6 @@ class ContinualLearningManager(ABC):
         return weighted_loss.sum()
 
     def l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):
-
         # Compute gradients for D batch
         inputs_D = self.l_rep(D_x, D_y, W_D, model)
         grads_D = torch.autograd.grad(inputs_D, model.parameters(), create_graph=True)
@@ -467,44 +455,11 @@ class ContinualLearningManager(ABC):
 
         return norm_loss
 
-
     def grad_l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):
         loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, W_X_y, model)
         residuals = torch.autograd.grad(loss, W_X_y, create_graph=True)
         # print(f"residuals in grad_l_sub is: {residuals}")
         return residuals[0]
-
-    def minimize_l_sub(self, D_x, D_y, W_D, X_y, Y_y, X_y_w, model):
-        optimizer = torch.optim.Adam([X_y_w], lr=0.01)
-        iteration = 0
-
-        while True:
-            optimizer.zero_grad()
-            loss = self.l_sub(D_x, D_y, W_D, X_y, Y_y, X_y_w, model)
-            loss.backward(retain_graph=True)
-
-            # Check if the gradient norm exceeds 100000 and clip if needed
-            if torch.norm(X_y_w.grad) > 100000:
-                torch.nn.utils.clip_grad_norm_(X_y_w, 10000)
-                print("Clipped gradients")
-
-            # Print gradient information every 10 iterations
-            if iteration % 50 == 0:
-                print(f"Iteration {iteration}, grad norm: {torch.norm(X_y_w.grad)}")
-
-            # Step the optimizer
-            optimizer.step()
-
-            # Continue optimizing while the norm of the gradient is greater than 1
-            if torch.norm(X_y_w.grad) < 1:
-                print("Gradient norm is under 1, stopping optimization.")
-                break
-
-            # Add a fallback to prevent infinite loops
-            iteration += 1
-            if iteration >= 2000:
-                print("Reached maximum iterations, stopping optimization.")
-                break
 
     def l_rep_OMP(self, x, y, model):
         x = x.to(DEVICE)
@@ -547,80 +502,11 @@ class ContinualLearningManager(ABC):
     
         grads_D_np = grads_D.detach().cpu().numpy()
 
-        # n_features = X_y.size(0)
-        # print(f"# desired non_zero elems: {n_features}")
-
-        # omp = OrthogonalMatchingPursuit(n_nonzero_coefs = n_features)  # Adjust the number of non-zero coefficients as needed
-        # omp = OrthogonalMatchingPursuit()
-        # omp.fit(grads_matrix, grads_D_np)
-
-        # w = omp.coef_
-        # return w
-
         print(f"Shapes are grads_matrix: {grads_matrix.shape}, grads_D_np: {grads_D_np.shape}")
 
         minimized_w = self.orthogonalmp(grads_matrix, grads_D_np)
         return torch.from_numpy(minimized_w.astype(np.float32)) # return a tensor for convenience
          
-
-
-    # def orthogonalmp(self, mat_a, b, tol=1e-4, nnz=None, positive=False):
-    #     """approximately solves min_x |x|_0 s.t.
-
-    #     Ax=b using Orthogonal Matching Pursuit
-
-    #     Args:
-    #         mat_a: design matrix of size (d, n)
-    #         b: measurement vector of length d
-    #         tol: solver tolerance
-    #         nnz: maximum number of nonzero coefficients (if None set to n)
-    #         positive: only allow positive nonzero coefficients
-
-    #     Returns:
-    #         vector of length n
-    #     """
-
-    #     mat_at = mat_a.T
-    #     _, n = mat_a.shape
-    #     if nnz is None:
-    #         nnz = n
-    #     x = np.zeros(n)
-    #     resid = np.copy(b)
-    #     normb = norm(b)
-    #     indices = []
-    #     x_i = []
-    #     for _ in range(nnz):
-    #         if norm(resid) / normb < tol:
-    #             break
-    #         projections = mat_at.dot(resid)
-    #         if positive:
-    #             index = np.argmax(projections)
-    #         else:
-    #             index = np.argmax(abs(projections))
-    #         if index in indices:
-    #             break
-    #         indices.append(index)
-    #         mat_ai = None
-    #         if len(indices) == 1:
-    #             mat_ai = mat_a[:, index]
-    #             x_i = projections[index] / mat_ai.T.dot(mat_ai)
-    #         else:
-    #             mat_ai = np.vstack([mat_ai, mat_a[:, index]])
-    #             x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
-    #             if positive:
-    #                 while min(x_i) < 0.0:
-    #                     argmin = np.argmin(x_i)
-    #                     indices = indices[:argmin] + indices[argmin + 1 :]
-    #                     mat_ai = np.vstack([mat_ai[:argmin], mat_ai[argmin + 1 :]])
-    #                     x_i = solve(mat_ai.dot(mat_ai.T), mat_ai.dot(b), assume_a='sym')
-    #         resid = b - mat_ai.T.dot(x_i)
-
-    #     for i, index in enumerate(indices):
-    #         try:
-    #             x[index] += x_i[i]
-    #         except IndexError:
-    #             x[index] += x_i
-    #     return x
 
     def orthogonalmp(self, A, b, tol=1E-4, nnz=None, positive=False):
         '''approximately solves min_x |x|_0 s.t. Ax=b using Orthogonal Matching Pursuit
@@ -1029,10 +915,7 @@ class ContinualLearningManager(ABC):
 
         # save gradients and model at end of task
         if model_save_path is not None: 
-            #grad_save_path = f'{model_save_path}/end_grad'
-            #if not os.path.exists(grad_save_path): os.mkdir(grad_save_path)
             torch.save(self.model, f"{model_save_path}/model.pt") # save model params at start
-            #self.compute_gradients_at_ideal(self.model, grad_save_path = grad_save_path, p = p)
 
         # save training loss
         if model_save_path is not None:
