@@ -844,13 +844,13 @@ class ContinualLearningManager(ABC):
             use_memory_set, batch_size
         )
 
-        full_data = test_dataloader.dataset
-        total_size = len(full_data)
+        full_test_data = test_dataloader.dataset
+        total_size = len(full_test_data)
         train_size = int(0.8 * total_size)  
         validation_size = total_size - train_size  
 
         # Split the dataset
-        test_dataset, validation_dataset = random_split(full_data, [train_size, validation_size])
+        test_dataset, validation_dataset = random_split(full_test_data, [train_size, validation_size])
 
         test_dataloader = DataLoader(test_dataset, batch_size=64, shuffle=True)
         validation_dataloader = DataLoader(validation_dataset, batch_size=len(validation_dataset), shuffle=False)
@@ -902,6 +902,12 @@ class ContinualLearningManager(ABC):
             validation_x, validation_y = validation_data
             validation_x, validation_y = validation_x.to(DEVICE), validation_y.to(DEVICE)
 
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
+            print(f"Validation_x before slicing is: {validation_x.shape}")
+            validation_x, validation_sample_weights = validation_x[:, :-1], validation_x[:, -1]
+            print(f"Validation_x after slicing is: {validation_x.shape}")
+
+
         callbacks = {'loss': []}
         past_validation_acc = 0.1 # only reset current validation acc after training for one task has finished
         for epoch in tqdm(range(epochs)):
@@ -915,8 +921,7 @@ class ContinualLearningManager(ABC):
                 validation_sample_weights = None
                 if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
                     batch_x, sample_weights = batch_x[:, :-1], batch_x[:, -1]  # Split data and weights
-                    # validation_x, validation_sample_weights = validation_x[:, :-1], validation_x[:, -1]
-
+                    
                 optimizer.zero_grad()
                 # Forward pass
                 outputs = self.model(batch_x)
@@ -961,8 +966,8 @@ class ContinualLearningManager(ABC):
 
             
             validation_acc, _ = self.evaluate_task(validation_dataloader, p=p)
-            if (validation_acc - past_validation_acc) / past_validation_acc * 100 < -10:
-                # if the validation accuracy has decreased enough, then break out of the training loop
+            if (validation_acc - past_validation_acc) / past_validation_acc * 100 < -5:
+                # if the validation accuracy has decreased by more than 5%, then break out of the training loop
                 print(f"\nTOTAL NUMBER OF EPOCHS BEFORE BREAKING: {epoch}")
                 break
             print(f"Difference in validation accs: {validation_acc - past_validation_acc}")
@@ -1312,6 +1317,10 @@ class ContinualLearningManager(ABC):
         # print(f"batch size in managers is {batch_size}")
 
         # Put into batches and create Tensor Dataset
+        train_dataset = TensorDataset(combined_train_x, combined_train_y)
+        train_dataloader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True
+        )
 
 
         # print("returning data loaders")
