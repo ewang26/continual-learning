@@ -436,8 +436,7 @@ class ClassBalancedReservoirSampling:
 
 
 # Hyper Parameters
-#num_epochs = 50
-num_epochs = 2
+num_epochs = 50
 batch_size = 64
 learning_rate = 0.002
 
@@ -511,6 +510,9 @@ class iCaRLNet(nn.Module):
         """
 
         exemplar_indices = []
+        exemplar_set = []
+        exemplar_features = []
+
         features = []
         self.feature_extractor.eval()
         with torch.no_grad():  
@@ -525,8 +527,6 @@ class iCaRLNet(nn.Module):
         class_mean_norm = torch.linalg.norm(class_mean) # Do I need to compute the norm of this? class_mean will be a scalar
         class_mean = class_mean / class_mean_norm # normalize
 
-        exemplar_set = []
-        exemplar_features = [] # list of Variables of shape (feature_size,)
         sum_inner = torch.zeros_like(class_mean).to(DEVICE) # base case for when there are no exemplars yet (k=0)
 
         for k in range(m):
@@ -534,6 +534,8 @@ class iCaRLNet(nn.Module):
             arg_min_i = None
 
             for i, feature_x in enumerate(features): # this loop simulates the argmin process
+                if i in exemplar_indices:
+                    continue
   
                 coefficient = 1/(k+1)
                 sum_outer = feature_x + sum_inner
@@ -547,6 +549,8 @@ class iCaRLNet(nn.Module):
             
             print(f"\narg_min_i is: {arg_min_i}")
 
+            if argmin_i is None:
+                print("No suitable element found during construction")
             # breakpoint()
             exemplar_set.append(images[arg_min_i])
             exemplar_features.append(features[arg_min_i])
