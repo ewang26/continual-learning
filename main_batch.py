@@ -4,6 +4,7 @@ from data import RandomMemorySetManager, KMeansMemorySetManager, \
         LambdaMemorySetManager, GSSMemorySetManager, ClassBalancedReservoirSampling, iCaRL, GCRMemorySetManager
 # import multiprocessing
 from managers import MnistManagerSplit, Cifar10ManagerSplit, Cifar100ManagerSplit
+from managers import update_run_settings
 from configs.config import Config
 from pathlib import Path
 from itertools import zip_longest
@@ -68,6 +69,7 @@ def main(config: Config):
         setup_wandb(config)
     
     rng = np.random.default_rng(seed = config.random_seed)
+    
 
     # loop through all p-values that we list
     for p_index, p in enumerate(config.p_arr):
@@ -116,15 +118,19 @@ def main(config: Config):
                 raise ValueError(f"Unsupported memory set manager: {config.memory_set_manager}")
             
             print(f"Memory Selection Method: {config.memory_set_manager}")
-            
+        
+            update_run_settings(config)
             manager = config.learning_manager(
                 memory_set_manager=memory_set_manager,
-                use_wandb=config.use_wandb,
-                model=config.model,
+                use_wandb = config.use_wandb,
+                model = config.model
             )
+            
             epochs = config.epochs
             num_tasks = manager.num_tasks
+            # manager = manager.set_params(config.toy_dataset, config.toy_dataset_class_size, config.save_dataset, config.used_saved_memory_set)
 
+            
             # Train on first task
             final_accs = []
             final_backward_transfers = []
@@ -229,7 +235,7 @@ def main(config: Config):
 
                      # for the sample, save accs in array and save in gradient path. eventually we push this to wandb
                     acc_save_path = model_train_save_dir
-                    use_saved_memory_set = True
+                    use_saved_memory_set = config.use_saved_memory_set
 
                     if use_saved_memory_set:
                          np.save(f'{acc_save_path}/acc_saved_memory_set.npy', final_accs)

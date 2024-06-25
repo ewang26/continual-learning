@@ -19,6 +19,7 @@ import numpy as np
 @dataclass
 class Config:
     def __init__(self, config_dict: Dict[str, Union[str, int, float]]):
+        print("in config init")
         self.config_dict = config_dict
         
         # for batch training and evaluation
@@ -27,16 +28,22 @@ class Config:
         self.memory_selection_method = self.config_dict['memory_set_manager']
         self.use_random_img = self.config_dict['use_random_img']
         self.num_ideal_models = self.config_dict['num_ideal_models']
-        self.toy_dataset = config_dict.get('toy_dataset', False)
-        self.toy_dataset = config_dict.get('toy_dataset_size', 1000)
+
         
-        #k-means addtions
+        #k-means additions
         self.num_centroids = config_dict.get('num_centroids', 10)  # Default value is 10
         self.num_classes = config_dict.get('num_classes', 10)     # Default value is 10
         self.device = torch.device(config_dict.get('device', 'cpu'))  # Default value is 'cpu'        
 
         # debugging config
         self.train_debug = self.config_dict['train_debug']
+
+
+        self.toy_dataset =  config_dict.get('toy_dataset', False)
+        self.toy_dataset_class_size =  config_dict.get('toy_dataset_class_size', 200) #size per class
+        self.save_datasets =  config_dict.get('save_datasets', False) 
+        self.use_saved_memory_set =  config_dict.get('use_saved_memory_set', False)
+
 
         # String run_name for wandb / logfiles
         self.run_name = (
@@ -129,6 +136,8 @@ class Config:
             self.run_name = f"EVAL_" + self.run_name
         else:
             self.run_name = f"TRAIN_" + self.run_name
+
+
 
 def dict_to_config_string(config_dict: Dict[str, Union[str, int, float]]) -> str:
     # Convert config dict to string for wandb

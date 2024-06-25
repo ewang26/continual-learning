@@ -30,12 +30,13 @@ from training_utils import (
 from tasks import Task
 import random
 
+#Global vars
 DEBUG = False
 # use_saved_memory_set = False
 # save_datasets = True  
 
-use_saved_memory_set = True
-save_datasets = False  
+# use_saved_memory_set = True
+# save_datasets = False  
 
 # Check for M1 Mac MPS (Apple Silicon GPU) support
 if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
@@ -51,7 +52,13 @@ else:
     DEVICE = torch.device("cpu")
 
 
-#DEVICE = torch.device("cpu")
+def update_run_settings(config):
+    print("in update run")
+    global toy_dataset, toy_dataset_class_size, save_datasets, use_saved_memory_set
+    toy_dataset = config.toy_dataset
+    toy_dataset_class_size = config.toy_dataset_class_size
+    save_datasets = config.save_datasets
+    use_saved_memory_set = config.use_saved_memory_set
 
 
 class ContinualLearningManager(ABC):
@@ -68,7 +75,7 @@ class ContinualLearningManager(ABC):
         memory_set_manager: MemorySetManager,
         model: nn.Module,
         dataset_path: str = "./data",
-        use_wandb=True,
+        use_wandb=True
     ):
         """
         Args:
@@ -77,6 +84,7 @@ class ContinualLearningManager(ABC):
             dataset_path: Path to the directory where the dataset is stored. TODO change this
             use_wandb: Whether to use wandb to log training.
         """
+        print("in managers init")
         self.use_wandb = use_wandb
 
         self.model = model
@@ -103,7 +111,7 @@ class ContinualLearningManager(ABC):
         )
 
         # Performance metrics
-        self.R_full = torch.ones(self.num_tasks, self.num_tasks) * -1   
+        self.R_full = torch.ones(self.num_tasks, self.num_tasks) * -1  
         
 
     @abstractmethod
@@ -961,7 +969,8 @@ class ContinualLearningManager(ABC):
 
                 test_data = np.column_stack((test_x, test_y))
                 np.save(str(model_save_path + "/test_set.npy"), test_data) 
-        ##################
+
+        ##################################
 
         ###### LOAD MEMORY SETS ##########
         if use_saved_memory_set:
@@ -977,7 +986,7 @@ class ContinualLearningManager(ABC):
             train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
             test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-        ####################
+        ################################
         
         if use_weights:
             label_weights = np.ones(len(current_labels))
@@ -1889,10 +1898,9 @@ class Cifar10Manager(ContinualLearningManager, ABC):
         train_x, train_y = convert_torch_dataset_to_tensor(trainset, flatten=False)
         test_x, test_y = convert_torch_dataset_to_tensor(testset, flatten=False)
 
-        toy_dataset = False
         if toy_dataset:
             num_classes = 10
-            num_samples_per_class = 200
+            num_samples_per_class = toy_dataset_class_size
 
             indices = []
             for i in range(num_classes):
@@ -2043,13 +2051,11 @@ class MnistManager(ContinualLearningManager, ABC):
         test_x, test_y = convert_torch_dataset_to_tensor(testset, flatten=True)
         train_x, train_y = convert_torch_dataset_to_tensor(trainset, flatten=True)
 
-        toy_mnist = True
-
         # toy dataset
-        if toy_mnist:
+        if toy_dataset:
             # Create a class-balanced version of a small dataset
             num_classes = 10
-            num_samples_per_class = 200
+            num_samples_per_class = toy_dataset_class_size
 
             indices = []
             for i in range(num_classes):
@@ -2108,13 +2114,13 @@ class MnistManagerSplit(MnistManager):
         memory_set_manager: MemorySetManager,
         model: nn.Module,
         dataset_path: str = "./data",
-        use_wandb=True,
+        use_wandb=True
     ):
         super().__init__(
             memory_set_manager=memory_set_manager,
             dataset_path=dataset_path,
             use_wandb=use_wandb,
-            model=model,
+            model=model
         )
 
     def _init_tasks(self) -> List[Task]:
