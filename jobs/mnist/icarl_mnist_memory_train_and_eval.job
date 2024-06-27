@@ -14,8 +14,8 @@ module load python/3.10.9-fasrc01
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
 
 # Define paths
-MAIN_PATH="/n/home12/thb489/continual-learning"
-VENV_PATH="/n/home12/thb489/continual-learning/myenv"
+MAIN_PATH="/n/home12/thb489/new_continual_learning/continual-learning"
+VENV_PATH="/n/home12/thb489/new_continual_learning/continual-learning/myenv"
 
 # Set working directory explicitly
 cd ${MAIN_PATH}
@@ -40,8 +40,8 @@ source "${VENV_PATH}/bin/activate"
 # python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/GSS/config_cifar10_train.yaml
 
 # Run iCaRL training and evaluation
-python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mnist_grad_eval.yaml
-# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mnist_train.yaml
+# python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mnist_grad_eval.yaml
+python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/iCaRL/config_mnist_train.yaml
 
 # # Run random training and evaluation
 # python ${MAIN_PATH}/main_batch.py --config ${MAIN_PATH}/configs/random/config_cifar10_grad_eval.yaml
