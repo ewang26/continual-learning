@@ -28,8 +28,7 @@ class Config:
         self.memory_selection_method = self.config_dict['memory_set_manager']
         self.use_random_img = self.config_dict['use_random_img']
         self.num_ideal_models = self.config_dict['num_ideal_models']
-
-        
+      
         #k-means additions
         self.num_centroids = config_dict.get('num_centroids', 10)  # Default value is 10
         self.num_classes = config_dict.get('num_classes', 10)     # Default value is 10
@@ -38,13 +37,11 @@ class Config:
         # debugging config
         self.train_debug = self.config_dict['train_debug']
 
-        #NEW STUFF
+        #new paramaters 
         self.toy_dataset =  config_dict.get('toy_dataset', False)
         self.toy_dataset_class_size =  config_dict.get('toy_dataset_class_size', 200) #size per class
         self.save_datasets =  config_dict.get('save_datasets', False) 
         self.use_saved_memory_set =  config_dict.get('use_saved_memory_set', False)
-        #END NEW STUFF
-
 
         # String run_name for wandb / logfiles
         self.run_name = (

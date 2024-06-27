@@ -119,7 +119,7 @@ def main(config: Config):
             
             print(f"Memory Selection Method: {config.memory_set_manager}")
         
-            update_run_settings(config)
+            update_run_settings(config) #added this function to use the new params from config in managers
             manager = config.learning_manager(
                 memory_set_manager=memory_set_manager,
                 use_wandb = config.use_wandb,
@@ -238,7 +238,7 @@ def main(config: Config):
                     use_saved_memory_set = config.use_saved_memory_set
 
                     if use_saved_memory_set:
-                         np.save(f'{acc_save_path}/acc_saved_memory_set.npy', final_accs)
+                         np.save(f'{acc_save_path}/acc_saved_memory_set.npy', final_accs) # if we are training on saved memory set, we store acc as a separate file
                     else:
                         np.save(f'{acc_save_path}/acc.npy', final_accs)
 
