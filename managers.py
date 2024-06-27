@@ -1047,7 +1047,7 @@ class ContinualLearningManager(ABC):
                 # Extract weights for GCR
                 if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
                     batch_x, sample_weights = self.extract_x_and_weights(batch_x)
-                    print("print sample weights in train", sample_weights)
+                    # print("print sample weights in train", sample_weights)
 
 
                 optimizer.zero_grad()
@@ -1069,7 +1069,7 @@ class ContinualLearningManager(ABC):
                 
                 #GCR addition 
                 if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
-                    print("sample weights")
+                    # print("sample weights")
                     loss = criterion(outputs, batch_y, sample_weights)
                 else: 
                     loss = criterion(outputs, batch_y)
@@ -1280,7 +1280,6 @@ class ContinualLearningManager(ABC):
         
     
     def reshape_weights(self, combined_train_x, memory_set_weights):
-        print(memory_set_weights)
         if combined_train_x.ndim == 4:  # For CIFAR
             return memory_set_weights.unsqueeze(1).unsqueeze(2).expand(-1, combined_train_x.size(2), combined_train_x.size(3))
         else: 
