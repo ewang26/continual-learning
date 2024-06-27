@@ -148,7 +148,7 @@ class ContinualLearningManager(ABC):
             model: Model to evaluate. If None then use self.model.
         """
 
-        print("In evaluate task")
+        # print("In evaluate task")
         if model is None:
             model = self.model
         if test_dataloader is None:
@@ -1032,7 +1032,7 @@ class ContinualLearningManager(ABC):
 
             #to print
 
-            print ("length of train full task dataloader: ", len(train_dataloader))
+            # print ("length of train full task dataloader: ", len(train_dataloader))
             for batch_x, batch_y in train_dataloader:
 
                 # print("length of dataset in data loader train", len(train_dataloader.dataset))
@@ -1363,7 +1363,7 @@ class ContinualLearningManager(ABC):
             combined_train_y = combined_train_y[perm]
             memory_set_weights = memory_set_weights[perm]
 
-            print("memory weights in task laoders:", memory_set_weights)
+            # print("memory weights in task laoders:", memory_set_weights)
 
             combined_train_x = torch.cat(
                 [combined_train_x, memory_set_weights.unsqueeze(1)], dim=1
