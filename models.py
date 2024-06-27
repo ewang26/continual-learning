@@ -14,7 +14,7 @@ CIFAR10_ARCH = {
 # TODO CIFAR100 Should use larger network
 CIFAR100_ARCH = {
     "in_channels": 3,
-    "out_channels": 10,
+    "out_channels": 100,
     "l1_out_channels": 32,
     "l2_out_channels": 32,
     "l3_out_channels": 64,
@@ -74,13 +74,13 @@ class CifarNet(nn.Module):
             nn.ReLU(),
             nn.Conv2d(l1_out_channels, l2_out_channels, 3),
             nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.MaxPool2d(2, return_indices=True),
             #nn.Dropout(p=0.25),
             nn.Conv2d(l2_out_channels, l3_out_channels, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(l3_out_channels, l4_out_channels, 3),
             nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.MaxPool2d(2, return_indices=True),
             #nn.Dropout(p=0.25),
         )
         self.linear_block = nn.Sequential(
@@ -92,9 +92,34 @@ class CifarNet(nn.Module):
         nn.init.constant_(self.out_block.weight, 0)
         nn.init.constant_(self.out_block.bias, 0)
 
+    # def forward(self, x):
+    #     o = self.conv_block(x)
+    #     o = torch.flatten(o, 1)
+    #     o = self.linear_block(o)
+    #     o = self.out_block(o)
+    #     return o
+
     def forward(self, x):
-        o = self.conv_block(x)
-        o = torch.flatten(o, 1)
+        # Check if input has an extra channel for weights
+        print(f"Input shape in forward: {x.shape}")
+        if x.size(1) == 4:  # 3 channels for image + 1 for weights
+            weights = x[:, -1:, :, :]
+            x = x[:, :-1, :, :]
+        else:
+            weights = None
+
+        for layer in self.conv_block:
+            if isinstance(layer, nn.MaxPool2d):
+                x, _ = layer(x)  # Ignore the indices
+            else:
+                x = layer(x)
+        o = torch.flatten(x, 1)
         o = self.linear_block(o)
         o = self.out_block(o)
+
+        if weights is not None:
+            # Apply weights if they were present in the input
+            weights = weights.view(weights.size(0), -1).mean(dim=1).unsqueeze(1)
+            o = o * weights
+
         return o

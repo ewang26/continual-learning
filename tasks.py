@@ -69,7 +69,7 @@ class Task:
             # print("Memory set weights shape in tasks: ", self.memory_set_weights)
             # self.memory_z = torch.empty(0)
 
-        print("Memory created in tasks.py with number of samples (?): ", len(self.memory_x))
+        # print("Memory created in tasks.py with number of samples (?): ", len(self.memory_x))
 
     def modify_memory(self, sample_x, sample_y, outputs=None, grad_sample=None, grad_batch=None):
 

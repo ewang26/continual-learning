@@ -181,7 +181,7 @@ class ContinualLearningManager(ABC):
             #GCR addition
             
             if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
-                batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1]  
+                batch_x, batch_w_x = self.extract_x_and_weights(batch_x)
             # print("In evaluate task test_x shape: ", batch_x.shape)
             outputs = model(batch_x)
 
@@ -240,6 +240,7 @@ class ContinualLearningManager(ABC):
         X = X.to(DEVICE)
         y = y.to(DEVICE)
 
+        print("calling model in forward pass")
         outputs = model(X)
 
         # Only select outputs for current labels
@@ -277,7 +278,7 @@ class ContinualLearningManager(ABC):
                     for param in model.parameters():
                         param.grad = None
 
-                    #print(batch_x.shape, batch_y.shape)
+                    print(batch_x.shape, batch_y.shape)
                     #print(batch_y[0] in valid_labels)
                     #print(5 in valid_labels)
                     #assert False
@@ -343,11 +344,12 @@ class ContinualLearningManager(ABC):
 
                     #use_saved_memory_set = True
                     #if use_saved_memory_set == False:
-                    batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1] #GCR addition
+                    batch_x, batch_w_x = self.extract_x_and_weights(batch_x) #GCR addition
                     batch_x.requires_grad=True
                     batch_y = batch_y.float()
                     batch_y.requires_grad=True 
                     print("before update")
+                    print(batch_x.size())
                     self.update_memory_gcr(batch_x, batch_y, model) #its ok to not pass batch_w_x here, right?
                     print("after update")
 
@@ -444,23 +446,26 @@ class ContinualLearningManager(ABC):
         self.tasks[self.task_index].update_memory_set_weights(memory_weights)
 
 
-        print("outside of train")
-        # print(f"Number of memory set weights: {len(self.tasks[self.task_index].memory_set_weights)}")
-        #print(f"Memory set weights: {self.tasks[self.task_index].memory_set_weights}")
+        print(f"Number of memory set weights: {len(self.tasks[self.task_index].memory_set_weights)}")
+        print(f"Memory set weights: {self.tasks[self.task_index].memory_set_weights}")
 
 
     def l_rep(self, x, y, w, model):
+        print("IN LREP")
         x = x.to(DEVICE)
         y = y.to(DEVICE)
         w = w.to(DEVICE)
 
         ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
         weighted_loss = self.memory_set_manager.beta * w * ce_loss
+        print("l_rep")
         return weighted_loss.sum()
+
 
     def l_sub(self, D_x, D_y, W_D, X_y, Y_y, W_X_y, model):
 
         # Compute gradients for D batch
+        print("IN L_SUB")
         inputs_D = self.l_rep(D_x, D_y, W_D, model)
         grads_D = torch.autograd.grad(inputs_D, model.parameters(), create_graph=True)
         grads_D = torch.cat([g.view(-1) for g in grads_D if g is not None]) # flattens the tensor
@@ -475,6 +480,7 @@ class ContinualLearningManager(ABC):
         # Compute the norm of the gradient difference squared
         norm_loss = (grads_D - grads_X).norm()**2 + regularization_term
 
+        print("l_sub returns")
         return norm_loss
 
 
@@ -517,18 +523,28 @@ class ContinualLearningManager(ABC):
                 break
 
     def l_rep_OMP(self, x, y, model):
+        print("in l_rep_OMP")
         x = x.to(DEVICE)
         y = y.to(DEVICE)
 
         ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        print("done")
         weighted_loss = self.memory_set_manager.beta * ce_loss
         return weighted_loss.sum()
 
     def l_rep_OMP_individual(self, x, y, model):
+        print("in l_rep_OMP_individual")
         x = x.to(DEVICE)
         y = y.to(DEVICE)
         # Compute individual losses without reducing
+        print("calling model x from l_rep_OMP_individual")
+        y = y.view(-1)
+        print(f"y shape after reshape: {y.shape}")
+
+        print(f"x shape: {x.shape}")
+        print(f"y shape: {y.shape}")
         ce_loss = nn.CrossEntropyLoss(reduction='none')(model(x), y.long())
+        print("done")
         weighted_loss = self.memory_set_manager.beta * ce_loss
         return weighted_loss
 
@@ -537,12 +553,19 @@ class ContinualLearningManager(ABC):
         grads_D = torch.autograd.grad(inputs_D, model.parameters(), create_graph=True)
         grads_D = torch.cat([g.view(-1) for g in grads_D if g is not None])
         # print(f"D_x shape: {D_x.shape}")
-        # print(f"X_y shape: {X_y.shape}")
+        print(f"X_y shape: {X_y.shape}")
 
         grads = []
 
         # Gradient from subset
-        for i, x in enumerate(X_y):
+        #theodora recent changes
+        #for i, x in enumerate(X_y):
+        for i in range(X_y.size(0)):
+            x = X_y[i:i+1]
+            #y = Y_y[i:i+1]
+            print("in for loop pf minimize_l_sub:")
+            print(f"X_y[{i}:{i+1}] shape: {x.shape}")
+            print(f"Y_y[{i}] shape: {Y_y[i].shape}")
             loss_i = self.l_rep_OMP_individual(x, Y_y[i], model)
             grads_i = torch.autograd.grad(loss_i, model.parameters(), create_graph=True)
         
@@ -748,7 +771,7 @@ class ContinualLearningManager(ABC):
 
             #GCR addition
             if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
-                batch_x, memory_set_weights = batch_x[:, :-1], batch_x[:, -1]
+                batch_x, memory_set_weights = self.extract_x_and_weights(batch_x)
                 print("Memory set weights in compute_gradients_at_ideal: ", memory_set_weights)  # Print for debugging
 
             batch_x = batch_x.to(DEVICE)
@@ -862,8 +885,6 @@ class ContinualLearningManager(ABC):
         else:
             per_sample_loss = nn.CrossEntropyLoss(reduction='none')(outputs, batch_y)
 
-        if sample_weights.dim() > 1:
-            sample_weights = sample_weights.view(-1) #CIFAR 
         weighted_loss = (per_sample_loss * sample_weights).mean() #or sum?
         return weighted_loss
 
@@ -942,7 +963,7 @@ class ContinualLearningManager(ABC):
                 for batch_x, batch_y, *batch_weights in train_dataloader:
 
                     if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
-                        batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1]  
+                        batch_x, batch_w_x = self.extract_x_and_weights(batch_x)
 
                     train_x.append(batch_x.cpu().numpy())
                     train_y.append(batch_y.cpu().numpy())
@@ -960,7 +981,7 @@ class ContinualLearningManager(ABC):
                 test_y = []
                 for batch_x, batch_y in test_dataloader:
                     if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
-                        batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1] 
+                        batch_x, batch_w_x = self.extract_x_and_weights(batch_x)
                     test_x.append(batch_x.cpu().numpy())
                     test_y.append(batch_y.cpu().numpy())
 
@@ -1054,8 +1075,11 @@ class ContinualLearningManager(ABC):
 
                 # Extract weights for GCR
                 if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
-                    batch_x, sample_weights = batch_x[:, :-1], batch_x[:, -1]  # Split data and weights
-                    # print("batch_x shape in train", batch_x.shape)
+                    batch_x, sample_weights = self.extract_x_and_weights(batch_x)
+                    print("print sample weights in train", sample_weights)
+
+                        
+
 
                 optimizer.zero_grad()
                 # Forward pass
@@ -1076,6 +1100,9 @@ class ContinualLearningManager(ABC):
                 
                 #GCR addition 
                 if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
+                    print("sample weights")
+                    # print(sample_weights.dim())
+                    # print(sample_weights)
                     loss = criterion(outputs, batch_y, sample_weights)
                 else: 
                     loss = criterion(outputs, batch_y)
@@ -1271,6 +1298,28 @@ class ContinualLearningManager(ABC):
         task.active = active
 
         return task
+    
+    def extract_x_and_weights(self, X):
+        batch_x = X
+        sample_weights = None
+        if batch_x.dim() == 4:  # CIFAR case
+            batch_x = X[:, :-1]
+            sample_weights = X[:, -1, 0, 0]
+            # print(sample_weights)
+        else:
+            batch_x = X[:, :-1]
+            sample_weights =  X[:, -1]
+        return batch_x, sample_weights
+        
+    
+    def reshape_weights(self, combined_train_x, memory_set_weights):
+        print(memory_set_weights)
+        if combined_train_x.ndim == 4:  # For CIFAR
+            print(memory_set_weights)
+            return memory_set_weights.unsqueeze(1).unsqueeze(2).expand(-1, combined_train_x.size(2), combined_train_x.size(3))
+        else: 
+            return memory_set_weights
+
 
     def _get_task_dataloaders(
         self, use_memory_set: bool, batch_size: int, full_batch: bool = False, shuffle = True, use_random_img = False) -> Tuple[DataLoader, DataLoader]:
@@ -1333,18 +1382,20 @@ class ContinualLearningManager(ABC):
         n = combined_train_x.shape[0]
         perm = torch.randperm(n)
 
-
         # GCR addition
-        use_memory_set = False
-        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_memory_set == False:
+        print("combined_x before weights:", combined_train_x.size())
+
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
+            
+            ######## TRAIN WEIGHTS ######### 
 
             memory_set_weights = torch.cat(
             [getattr(task, "memory_set_weights") for task in memory_tasks]
             + [getattr(terminal_task, "train_weights")]
         )
+            print("combined_x after weights:", combined_train_x.size())
             
-            if combined_train_x.ndim == 4:  # For CIFAR
-                memory_set_weights = memory_set_weights.unsqueeze(1).unsqueeze(2).expand(-1, combined_train_x.size(2), combined_train_x.size(3))
+            memory_set_weights = self.reshape_weights(combined_train_x, memory_set_weights)
 
             #print(f"memory set weights in get_task_dataloaders: {len(memory_set_weights)}")
             print("shape of comined x without weights:" , combined_train_x.size())
@@ -1354,9 +1405,13 @@ class ContinualLearningManager(ABC):
             combined_train_y = combined_train_y[perm]
             memory_set_weights = memory_set_weights[perm]
 
+            print("memory weights in task laoders:", memory_set_weights)
+
             combined_train_x = torch.cat(
                 [combined_train_x, memory_set_weights.unsqueeze(1)], dim=1
             )
+            
+            ######## TEST WEIGHTS ######### 
             
             test_weights = torch.cat(
                 [getattr(task, "test_weights") for task in running_tasks]
@@ -1371,8 +1426,7 @@ class ContinualLearningManager(ABC):
             # print(f"in get dataloaders: test_weights lenth {len(test_weights)}")
             # print(f"combined_test_x lenth {len(combined_test_x)}")
 
-            if combined_test_x.ndim == 4:  # For CIFAR
-                test_weights = test_weights.unsqueeze(1).unsqueeze(2).expand(-1, combined_test_x.size(2), combined_test_x.size(3))
+            test_weights = self.reshape_weights(combined_test_x, test_weights)
 
             combined_test_x = torch.cat(
                 [combined_test_x, test_weights.unsqueeze(1)], dim=1
@@ -1406,17 +1460,21 @@ class ContinualLearningManager(ABC):
             )
             test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
+        print("Testing DataLoader shuffling:")
+        for i in range(2):  # Test two iterations
+            print(f"Iteration {i+1}:")
+            all_indices = []
+            all_labels = []
+            for batch_idx, (data, labels) in enumerate(train_dataloader):
+                if batch_idx == 0:  # Print only for the first batch
+                    print(f"  First batch shape: {data.shape}")
+                    print(f"  First 10 labels in the first batch: {labels[:10]}")
+                all_indices.extend(range(batch_idx * len(labels), (batch_idx + 1) * len(labels)))
+                all_labels.extend(labels.tolist())
+            print(f"  All labels order: {all_labels[:20]}...")  # Print first 20 labels
         
-        #print("shape of comined x:" , combined_train_x.size())
-        #print("returning full data loaders for all data up to task")
 
-                # Print the number of samples per class in the training dataset
-        # train_class_counts = {i: (combined_train_y == i).sum().item() for i in combined_train_y.unique()}
-        # print("Training dataset class counts:", train_class_counts)
 
-        # Print the number of samples per class in the testing dataset
-        # test_class_counts = {i: (combined_test_y == i).sum().item() for i in combined_test_y.unique()}
-        # print("Testing dataset class counts:", test_class_counts)
 
         return train_dataloader, test_dataloader
     
@@ -1465,7 +1523,7 @@ class ContinualLearningManager(ABC):
             combined_train_y = torch.cat(
                 [getattr(task, memory_y_attr) for task in memory_tasks]
             )
-            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_memory_set == False:
+            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
                 memory_set_weights = torch.cat(
                     [getattr(task, "memory_set_weights") for task in memory_tasks]
                 )
@@ -1491,7 +1549,7 @@ class ContinualLearningManager(ABC):
                 + [getattr(terminal_task, terminal_y_attr)]
             )
 
-            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_memory_set == False:
+            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
                 memory_set_weights = torch.cat(
                 [getattr(task, "memory_set_weights") for task in memory_tasks]
                 + [getattr(terminal_task, "train_weights")]
@@ -1538,16 +1596,12 @@ class ContinualLearningManager(ABC):
         )
 
         # GCR addition
-        use_memory_set = False
-        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_memory_set == False:
+        #train_weights = None
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and use_saved_memory_set == False:
             train_weights = terminal_task.get_train_weights()
-            if train_weights is not None:
-                # print("Memory set weights in terminal task loader: ", memory_set_weights)
-                # print(f"Size of combined_train_x: {combined_train_x.size()}")
-                # print(f"Size of memory_set_weights: {train_weights.size()}")
-                
+            if train_weights is not None:  
+                train_weights = self.reshape_weights(combined_train_x, train_weights)         
                 combined_train_x = torch.cat([combined_train_x, train_weights.unsqueeze(1)], dim=1) 
-                # print(f"Size of combined_train_x after concatenation: {combined_train_x.size()}")
 
         # Randomize the train dataset
         n = combined_train_x.shape[0]
@@ -1555,10 +1609,10 @@ class ContinualLearningManager(ABC):
         combined_train_x = combined_train_x[perm]
         combined_train_y = combined_train_y[perm]
 
-         #GCR addition -- permute memowry set 
-        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and train_weights is not None and use_memory_set == False:
+         #GCR addition -- permute memory set 
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and train_weights is not None and use_saved_memory_set == False:
             train_weights = train_weights[perm]
-            # reconcatenate weights after permutation 
+            print(combined_train_x.size())
             combined_train_x = torch.cat([combined_train_x[:, :-1], train_weights.unsqueeze(1)], dim=1) 
 
         # Getting batch size
@@ -1567,13 +1621,7 @@ class ContinualLearningManager(ABC):
         else:
             batch_size = batch
 
-        # print(f"Size of combined_train_x: {combined_train_x.size()}")
-        # print(f"Size of combined_train_y: {combined_train_y.size()}")
-        # print(f"Batch size: {batch_size}")
 
-        # print(f"batch size in managers is {batch_size}")
-
-        # Put into batches and create Tensor Dataset
         train_dataset = TensorDataset(combined_train_x, combined_train_y)
         train_dataloader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True
@@ -1855,7 +1903,7 @@ class Cifar10Manager(ContinualLearningManager, ABC):
             memory_set_manager=memory_set_manager,
             dataset_path=dataset_path,
             use_wandb=use_wandb,
-            model=model,
+            model=model
         )
 
     def _load_dataset(
@@ -1899,6 +1947,7 @@ class Cifar10Manager(ContinualLearningManager, ABC):
         test_x, test_y = convert_torch_dataset_to_tensor(testset, flatten=False)
 
         if toy_dataset:
+            # # Create a class-balanced version of a small dataset
             num_classes = 10
             num_samples_per_class = toy_dataset_class_size
 
@@ -1911,6 +1960,10 @@ class Cifar10Manager(ContinualLearningManager, ABC):
 
             train_x = train_x[indices]
             train_y = train_y[indices]
+
+
+            
+        return train_x, train_y.long(), test_x, test_y.long()
 
 
 class Cifar10ManagerSplit(Cifar10Manager):
@@ -2051,7 +2104,7 @@ class MnistManager(ContinualLearningManager, ABC):
         test_x, test_y = convert_torch_dataset_to_tensor(testset, flatten=True)
         train_x, train_y = convert_torch_dataset_to_tensor(trainset, flatten=True)
 
-        # toy dataset
+        # toy dataset mnist
         if toy_dataset:
             # Create a class-balanced version of a small dataset
             num_classes = 10
@@ -2114,13 +2167,13 @@ class MnistManagerSplit(MnistManager):
         memory_set_manager: MemorySetManager,
         model: nn.Module,
         dataset_path: str = "./data",
-        use_wandb=True
+        use_wandb=True,
     ):
         super().__init__(
             memory_set_manager=memory_set_manager,
             dataset_path=dataset_path,
             use_wandb=use_wandb,
-            model=model
+            model=model,
         )
 
     def _init_tasks(self) -> List[Task]:

@@ -38,11 +38,12 @@ class Config:
         # debugging config
         self.train_debug = self.config_dict['train_debug']
 
-
+        #NEW STUFF
         self.toy_dataset =  config_dict.get('toy_dataset', False)
         self.toy_dataset_class_size =  config_dict.get('toy_dataset_class_size', 200) #size per class
         self.save_datasets =  config_dict.get('save_datasets', False) 
         self.use_saved_memory_set =  config_dict.get('use_saved_memory_set', False)
+        #END NEW STUFF
 
 
         # String run_name for wandb / logfiles

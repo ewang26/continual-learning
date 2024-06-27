@@ -971,5 +971,5 @@ class GCRMemorySetManager(MemorySetManager):
             return x, y
         
         # print(f"Shape of memory set in data.py is: {memory_x.shape}") # erik was just debugging some stuff
-        print(f"Memory set size in data.py is: {self.memory_set_size}")
+        # print(f"Memory set size in data.py is: {self.memory_set_size}")
         return torch.empty(0), torch.empty(0)

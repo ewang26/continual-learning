@@ -5,7 +5,7 @@ wandb_profile: alanhsu
 
 
 # Memory set hyperparameters
-memory_set_manager: random
+memory_set_manager: GCR
 use_memory_set: True
 grad_type: None
 p: dummar_var
@@ -16,7 +16,7 @@ num_ideal_models: None
 # for gradient evaluating
 # p_arr: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]
 # num_samples: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-p_arr: [0.0015]
+p_arr: [0.1]
 num_samples: [1]
 
 #p_arr: [1]
@@ -36,12 +36,10 @@ random_seed: 0xC0FFEE
 epochs: 2
 #epochs: 30
 
-# Model arch 
-# model:
-#  type: mlp 
-#  params: 
-#    sizes: [784, 100, 10] 
-#    acts: [relu]
+toy_dataset: True
+toy_dataset_class_size: 10 #size per class
+save_datasets: False  
+use_saved_memory_set: False
 
 #Example CNN
 model: 
