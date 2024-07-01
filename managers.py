@@ -54,11 +54,12 @@ else:
 
 #update global paramerters based on config
 def update_run_settings(config):
-    global toy_dataset, toy_dataset_class_size, save_datasets, use_saved_memory_set
+    global toy_dataset, toy_dataset_class_size, save_datasets, use_saved_memory_set, weighted_function_GRC
     toy_dataset = config.toy_dataset
     toy_dataset_class_size = config.toy_dataset_class_size
     save_datasets = config.save_datasets
     use_saved_memory_set = config.use_saved_memory_set
+    weighted_function_GRC = config.weighted_function_GRC
 
 
 class ContinualLearningManager(ABC):
@@ -722,7 +723,11 @@ class ContinualLearningManager(ABC):
         #     sample_weights = torch.ones(batch_x.shape[0]).to(DEVICE) # is this ok to do 
         #     criterion = nn.CrossEntropyLoss(weight = label_weights, sample_weights)
         # else: 
-        criterion = nn.CrossEntropyLoss(weight = label_weights)
+
+        if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and weighted_function_GRC == True:
+            criterion = self.gcr_loss(sample_weights = None, weight = label_weights) # can i do this for sample weights?
+        else:
+            criterion = nn.CrossEntropyLoss(weight = label_weights)
 
         batch_index = 0
         # loop through batches; should only be 1 batch right now
@@ -737,7 +742,6 @@ class ContinualLearningManager(ABC):
             #GCR addition
             if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
                 batch_x, memory_set_weights = self.extract_x_and_weights(batch_x)
-                print("Memory set weights in compute_gradients_at_ideal: ", memory_set_weights)  # Print for debugging
 
             batch_x = batch_x.to(DEVICE)
             batch_y = batch_y.to(DEVICE)
@@ -748,12 +752,12 @@ class ContinualLearningManager(ABC):
             outputs_splice = outputs[:, current_labels]
             #print(outputs_splice.type(), batch_y.type())
             print("before evaluate")
+
+            if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager" and weighted_function_GRC == True:
+                loss = criterion(outputs_splice, batch_y, memory_set_weights, label_weights)
+            else:
+                loss = criterion(outputs_splice, batch_y)
             
-            #GCR addition
-            # if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
-            #     loss = self.gcr_loss(outputs_splice, batch_y, memory_set_weights, label_weights)
-            # else:
-            loss = criterion(outputs_splice, batch_y)
 
             print("after evaluate")
             loss.backward()
@@ -1466,6 +1470,8 @@ class ContinualLearningManager(ABC):
 
         test_x_attr = "test_x"
         test_y_attr = "test_y"
+
+        
 
         if grad_type == 'past':
 

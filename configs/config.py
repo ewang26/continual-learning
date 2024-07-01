@@ -42,6 +42,7 @@ class Config:
         self.toy_dataset_class_size =  config_dict.get('toy_dataset_class_size', 200) #size per class
         self.save_datasets =  config_dict.get('save_datasets', False) 
         self.use_saved_memory_set =  config_dict.get('use_saved_memory_set', False)
+        self.weighted_function_GRC =  config_dict.get('weighted_function_GRC', False)
 
         # String run_name for wandb / logfiles
         self.run_name = (
