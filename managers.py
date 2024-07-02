@@ -1,31 +1,32 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional, Type, Set, Dict
 from pathlib import Path
+import os
+from tqdm import tqdm
+
+import wandb
+from jaxtyping import Float
 
 import torch
 from torch import Tensor
 import torchvision
 import torchvision.transforms as transforms
-from jaxtyping import Float
+from torch.utils.data import DataLoader, TensorDataset, Subset, random_split
 from torch.utils.data.dataset import Dataset as TorchDataset
 from torch.optim import Adam
-from torch.utils.data import DataLoader, TensorDataset
 import torch.nn as nn
-import numpy as np
-from tqdm import tqdm
-import wandb
-from matplotlib import pyplot as plt
 from torch.nn.utils import clip_grad_norm_
-import os
-from sklearn.linear_model import OrthogonalMatchingPursuit
 import torch.nn.functional as F
+
 import functools
 from functools import partial 
-from torch.utils.data import DataLoader, Subset, random_split
+
+import numpy as np
 from numpy.linalg import cond, inv, norm
 from scipy import sparse as sp
 from scipy.linalg import lstsq, solve
-
+from sklearn.linear_model import OrthogonalMatchingPursuit
+from matplotlib import pyplot as plt
 
 from data import MemorySetManager
 from models import MLP, MNLIST_MLP_ARCH, CifarNet, CIFAR10_ARCH, CIFAR100_ARCH
@@ -51,9 +52,6 @@ elif torch.cuda.is_available():
 else:
     print("Using CPU")
     DEVICE = torch.device("cpu")
-
-
-#DEVICE = torch.device("cpu")
 
 
 class ContinualLearningManager(ABC):
@@ -560,9 +558,6 @@ class ContinualLearningManager(ABC):
             except IndexError:
                 x[index] += x_i
         return x
-
-
-
 
     def compute_gradients_at_ideal(
         self,

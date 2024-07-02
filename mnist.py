@@ -58,7 +58,7 @@ def make_tasks_data(trainset, testset, num_tasks=5, max_data_size=1000, classes_
 
 	return tasks_data, test_data
 
-def main():
+def run_mnist():
 	# Define parameters for MNIST dataset
 	channels = 3
 	feature_dim = 2028
@@ -166,10 +166,10 @@ def main():
 	else:
 		# Initialize memory set managers
 		managers = [
-			# RandomMemorySetManager(p), #random memory set
-			# KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
-			# LambdaMemorySetManager(p), #lambda memory set
-			# GSSMemorySetManager(p), #GSS memory set
+			RandomMemorySetManager(p), #random memory set
+			KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+			LambdaMemorySetManager(p), #lambda memory set
+			GSSMemorySetManager(p), #GSS memory set
 			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
 			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
 		]
@@ -211,6 +211,10 @@ def main():
 			print('\n\n', file=f)
 		
 		f.close()
+	return None
 
+def main():
+	run_mnist()
+	
 if __name__ == "__main__":
 	main()

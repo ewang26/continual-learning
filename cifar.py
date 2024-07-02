@@ -1,6 +1,6 @@
 from data import *
 from models import *
-from tasks_training import *
+from train_task import *
 
 import numpy as np
 from numpy.random import RandomState
@@ -16,125 +16,199 @@ from torch.optim import Adam
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
-torch.set_default_dtype(torch.float64)
+torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
 
-def make_tasks_data(max_data_size=1000):
-	# Generate CIFAR training data
-	transform = transforms.Compose([transforms.ToTensor(),
-								    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-	trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-	                                        download=True, transform=transform)
-	testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-	                                        download=True, transform=transform)
+
+def make_tasks_data(trainset, testset, num_tasks=5, max_data_size=1000, classes_per_task=2):
 	tasks_data = {}
+	test_data = {}
 
 	# Initialize task
 	t = 0
-	# Iterate through tasks (2 classes per task)
-	for c in range(0, num_tasks * 2, 2):
+	# Iterate through tasks
+	for c in range(0, num_tasks * classes_per_task, classes_per_task):
 		print(f'task {t}, classes {c}, {c + 1}')
 
-		# Select two classes
-		first_two_classes_idx = np.where((np.array(trainset.targets) == c) | (np.array(trainset.targets) == c + 1))[0][:max_data_size]
+		# Select classes for task t in training set
+		first_two_classes_idx = np.where((np.array(trainset.targets) >= c) & (np.array(trainset.targets) < c + classes_per_task))[0][:max_data_size]
 		imgs, labels = zip(*trainset)
 
 		X = torch.stack(imgs, 0) #turn images into 3-D tensors
 		y = torch.Tensor(labels).long() #turn labels into tensors
-		X = X[first_two_classes_idx] #take subset of images for the first two classes
-		y = y[first_two_classes_idx] #take subset of labels for the first two classes
+		X = X[first_two_classes_idx] #take subset of images for the current task
+		y = y[first_two_classes_idx] #take subset of labels for the current task
 
-		tasks_data[t] = (X, y)
+		tasks_data[t] = (X, y) #append train data for task t to dictionary of task training data
 
-		# Select two classes
-		first_two_classes_idx = np.where((np.array(testset.targets) == c) | (np.array(testset.targets) == c + 1))[0][:max_data_size]
+		# Select classes for task t in testing set
+		first_two_classes_idx = np.where((np.array(testset.targets) >=  c) & (np.array(testset.targets) < c + classes_per_task))[0][:max_data_size]
 		imgs, labels = zip(*testset)
 
 		X = torch.stack(imgs, 0) #turn images into 3-D tensors
 		y = torch.Tensor(labels).long() #turn labels into tensors
-		X = X[first_two_classes_idx] #take subset of images for the first two classes
-		y = y[first_two_classes_idx] #take subset of labels for the first two classes
+		X = X[first_two_classes_idx] #take subset of images for the current task
+		y = y[first_two_classes_idx] #take subset of labels for the current task
 
-		test_data[t] = (X, y)
+		test_data[t] = (X, y) #append test data for task t to dictionary of task test data
+
 		# Increment task
 		t += 1
 
 	return tasks_data, test_data
 
 def main():
-	# Define experimental parameters
-	batch_size = 10
-	model_training_epoch = 30
-	classes = 2
+	# Define parameters for MNIST dataset
 	channels = 3
 	feature_dim = 2028
-	input_shape = (3, 32, 32)
-	check_point = 1
-	input_dim = 16 * 5 * 5
+	input_shape = (28, 28)
+	input_dim = 16 * 4 * 4
+
+	# Define parameters for task creation
+	max_data_size = 1000
+	classes_per_task = 2 
+	num_tasks = 5
+
+	# Define MNIST experimental parameters
+	model_PATH = './cifar10'
+	train_full = False
+	
+	# Define parameters for instantiating memory selection methods
 	p = 0.01
 	num_centroids = 2
 	device = 'cpu'
-	early_stopping_threhold = 0.1
-	max_data_size = 1000
-	classes_per_task = 2
 	num_exemplars = int(p * max_data_size / 2.)
-	icarl_loss_type = 'replay'
-	num_tasks = 3
-	model_PATH = './cifar10'
+	
+	# Deinfe CL pipline parameters
+	batch_size = 50
+	model_training_epoch = 30
+	check_point = 1
+	lr = 0.001
+	early_stopping_threshold = 5.
 
-	#random memory set
-	random_mset = RandomMemorySetManager(p)
-	#kmeans memory set
-	kmeans_mset = KMeansMemorySetManager(p, num_centroids, device, max_iter=50)
-	#lambda memory set
-	lambda_mset = LambdaMemorySetManager(p)
-	#GSS memory set
-	GSS_mset = GSSMemorySetManager(p)
-	#icarl memory set
-	icarl = iCaRL(input_dim, feature_dim, num_exemplars, p, architecture='cnn')
+	# Seed torch generator
+	random_seed = 1
+	generator = torch.Generator().manual_seed(random_seed)
 
-	method = f'Random \n\n **********************'
-	# method = f'iCaRL ({icarl_loss_type} loss) \n\n **********************'
-	mset_manager = random_mset
+	# Generate CIFAR training data
+	transform = transforms.Compose([transforms.ToTensor(),
+								    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+	trainset = torchvision.datasets.CIFAR10(
+		root='./data', 
+		train=True,
+		download=True, 
+		transform=transform,
+	)
+	testset = torchvision.datasets.CIFAR10(
+		root='./data', 
+		train=False,
+		download=True, 
+		transform=transform,
+	)
 
 	# Create data for tasks
-	tasks_data, test_data = make_tasks_data(max_data_size=max_data_size, num_tasks=num_tasks)
+	tasks_data, test_data = make_tasks_data(
+		trainset, 
+		testset, 
+		max_data_size=max_data_size, 
+		num_tasks=num_tasks,
+		classes_per_task=classes_per_task,
+	)
+
+	# Verify correctness of data created for tasks
+	for t in tasks_data.keys():
+		y = tasks_data[t][1]
+		assert len(torch.unique(y)) == classes_per_task
+		y = test_data[t][1]
+		assert len(torch.unique(y)) == classes_per_task
 
 	# Define training loss
-	criterion = nn.CrossEntropyLoss()
+	criterion = nn.CrossEntropyLoss(reduction='none') #no reduction, for per-sample weights
 
-	# Define model architecture
-	model_1 = CifarNet(CIFAR10_ARCH["in_channels"],
-        			   CIFAR10_ARCH["out_channels"],
-        			   CIFAR10_ARCH["l1_out_channels"],
-        			   CIFAR10_ARCH["l2_out_channels"],
-        			   CIFAR10_ARCH["l3_out_channels"],
-        			   CIFAR10_ARCH["l4_out_channels"])
-	model_2 = CifarNet(CIFAR10_ARCH["in_channels"],
-        			   CIFAR10_ARCH["out_channels"],
-        			   CIFAR10_ARCH["l1_out_channels"],
-        			   CIFAR10_ARCH["l2_out_channels"],
-        			   CIFAR10_ARCH["l3_out_channels"],
-        			   CIFAR10_ARCH["l4_out_channels"])
-	model_3 = CifarNet(CIFAR10_ARCH["in_channels"],
-        			   CIFAR10_ARCH["out_channels"],
-        			   CIFAR10_ARCH["l1_out_channels"],
-        			   CIFAR10_ARCH["l2_out_channels"],
-        			   CIFAR10_ARCH["l3_out_channels"],
-        			   CIFAR10_ARCH["l4_out_channels"])
-	models = {'M1': model_1, 'M2': model_2, 'M3': model_3}
+	# Instantiate models
+	model_keys = ['M1', 'M2', 'M3']
+	models = {}
+	for key in model_keys:
+		torch.manual_seed(random_seed)
+		models[key] = CifarNet(
+			CIFAR10_ARCH["in_channels"],
+			CIFAR10_ARCH["out_channels"],
+			CIFAR10_ARCH["l1_out_channels"],
+			CIFAR10_ARCH["l2_out_channels"],
+			CIFAR10_ARCH["l3_out_channels"],
+			CIFAR10_ARCH["l4_out_channels"],
+		)
 
 	# Define parameters for CL training
-	kwargs = {'model_training_epoch': model_training_epoch, 
-			  'check_point': check_point, 
-			  'early_stopping_threshold': early_stopping_threshold, 
-			  'lr': lr,
-			  'model_PATH': model_PATH,
-			  'class_balanced': True}
+	kwargs = {
+		'model_training_epoch': model_training_epoch, 
+		'check_point': check_point, 
+		'early_stopping_threshold': early_stopping_threshold, 
+		'lr': lr,
+		'model_PATH': model_PATH,
+		'class_balanced': True,
+	}
 
-	# CL training on tasks
-	# CL_tasks(tasks_data, models, criterion, mset_manager, use_memory_sets=False, random_seed=1, **kwargs)
-	CL_tasks(tasks_data, test_data, models, criterion, mset_manager, use_memory_sets=True, random_seed=1, **kwargs)
+	# Train model M1 on tasks 0 to T-1, train model M2 on tasks 0 to T; save model weights
+	if train_full:
+		_, _ = CL_tasks(
+			tasks_data, 
+			test_data, 
+			models, 
+			criterion, 
+			use_memory_sets=False, 
+			random_seed=1, 
+			**kwargs,
+		)
+	# Construct memory sets, train model M3 on memory sets on tasks 0 to T-1 union full training set on task T;
+	# Evaluate model performance and gradient similarities
+	else:
+		# Initialize memory set managers
+		managers = [
+			# RandomMemorySetManager(p), #random memory set
+			# KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+			# LambdaMemorySetManager(p), #lambda memory set
+			# GSSMemorySetManager(p), #GSS memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
+		]
 
+		# Open output file for results
+		f = open('output_MNIST.txt', 'a')
+
+		# Iterate through all memory managers
+		for memory_set_manager in managers:
+			memory_set_type = memory_set_manager.__class__.__name__
+			method_name = f'{memory_set_type} memory selection'
+
+			if memory_set_type == 'iCaRL':
+				kwargs['icarl_loss_type'] = memory_set_manager.loss_type
+				method_name = f'{memory_set_type} memory selection ({memory_set_manager.loss_type})'
+
+			performances, models = CL_tasks(
+				tasks_data, 
+				test_data, 
+				models, 
+				criterion, 
+				memory_set_manager, 
+				use_memory_sets=True, 
+				random_seed=1, 
+				**kwargs,
+			)
+
+			task_performances = evaluate(
+				models['M3'], 
+				criterion, 
+				test_data, 
+				batch_size=batch_size, 
+				generator=generator,
+			)
+
+			print(f'{method_name}, p: {p}, tasks: {num_tasks}, classes per task: {classes_per_task} \n **********************', file=f)
+			print(performances, file=f)
+			print(task_performances, file=f)
+			print('\n\n', file=f)
+		
+		f.close()
 
 if __name__ == "__main__":
 	main()
