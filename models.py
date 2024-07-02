@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+import torch.nn.functional as F
 
 # MNLIST_MLP_ARCH = {"sizes":[784, 256, 256, 10], "acts":['relu', 'relu']}
 MNLIST_MLP_ARCH = {"sizes": [784, 1000, 10], "acts": ["relu"]}
@@ -57,6 +58,27 @@ class MLP(nn.Module):
             return o
         return o, pre_o
     
+
+class MNISTNet(nn.Module):
+    def __init__(self, in_channels=1, out_channels=10):
+        super(MNISTNet, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.fc1 = nn.Linear(9216, 128)
+        self.fc2 = nn.Linear(128, out_channels)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
+        return x
+
 
 class CifarNet(nn.Module):
     def __init__(

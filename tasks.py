@@ -18,12 +18,14 @@ class Task:
 
     def __init__(
         self,
-        train_x: Float[Tensor, "n f"],
-        train_y: Float[Tensor, "n 1"],
-        test_x: Float[Tensor, "m f"],
-        test_y: Float[Tensor, "m 1"],
-        task_labels: Set[int],
-        memory_set_manager: MemorySetManager,
+        train_x,
+        train_y,
+        test_x,
+        test_y,
+        task_labels,
+        memory_set_manager,
+        random_seed = 1,
+        class_balanced = True
     ) -> None:
         """
         Args:
@@ -34,63 +36,89 @@ class Task:
             task_labels: Set of labels that this task uses.
             memory_set_manager: The memory set manager to use to create the memory set.
         """
+        # Set random seeds
+        self.rand = RandomState(random_seed)
+        self.generator = torch.Generator().manual_seed(random_seed)
+        torch.manual_seed(random_seed)
+        # Data for the task
         self.train_x = train_x
         self.train_y = train_y
         self.test_x = test_x
         self.test_y = test_y
         self.task_labels = task_labels
-
-        self.memory_x, self.memory_y = memory_set_manager.create_memory_set(
+        # Memory sets and memory set manager
+        self.memory_set_manager = memory_set_manager
+        self.class_balanced = class_balanced
+        self.memory_x, self.memory_y = self.memory_set_manager.create_memory_set(
             train_x, train_y
         )
-        self.task_labels = task_labels
-        self.active = False
-
-        print("IN TASKS.PY")
-        print(f"Train memory set shape in tasks.py is: {self.memory_x.shape}")
-        print(f"Train memory set length in tasks.py is: {len(self.memory_y)}")
-
-        self.train_weights = torch.ones(self.train_x.shape[0])
+        # Weights
         self.memory_set_weights = torch.ones(self.memory_x.shape[0])
+        self.train_weights = torch.ones(self.train_x.shape[0])
         self.test_weights = torch.ones(self.test_x.shape[0])
-
+        # Additional attributes required for special memory set selection methods
         if memory_set_manager.__class__.__name__ == 'GSSMemorySetManager':
-            self.memory_set_manager = memory_set_manager # save the manager for future use
-            self.C_arr = np.array([]) # initialize score array for memory set. i can use to initiaze for weights. 
-        
+            self.similarity_scores = np.empty(0) # initialize score array for memory set 
+
+    # Compute gradient per sample
+    def __compute_grad__(self, classifier, criterion, sample, target):
+        sample = sample.unsqueeze(0)
+        target = target.unsqueeze(0)
+        outputs = classifier(sample)
+        loss = criterion(outputs, target)
+        structured_grad = torch.autograd.grad(loss, list(classifier.parameters()))
+        flatten_grad = [layer.flatten() for layer in structured_grad]
+        flatten_grad = torch.cat(flatten_grad, 0).reshape((1, -1))
+        return flatten_grad
+
+    # Get per sample gradients for a batch
+    def __compute_sample_grads__(self, classifier, data, targets):
+        batch_size = data.shape[0]
+        sample_grads = [compute_grad(classifier, data[i, :].reshape(reshape), targets[i]) for i in range(batch_size)]
+        sample_grads = torch.cat(sample_grads, 0)
+        return sample_grads
+
+    def update_memory_sets(self, model, criterion, debug_mode=False):
+        # Update GSS memory set
+        if memory_set_manager.__class__.__name__ == 'GSSMemorySetManager':
+            # Keep track of number of replacements for debugging
+            if debug_mode:
+                replacement_counter = 0 
+
+            shuffled_idx = rand.permutation(self.train_x.shape[0])
+            for i in range(train_x.shape[0]):
+                idx = shuffled_idx[i]
+                grad_sample = self.__compute_grad__(model, criterion, train_x[idx], train_y[idx])
+                if memory_x.shape[0] == 0:
+                    grad_batch = self.__compute_sample_grads__(model, train_x[:2], train_y[:2])
+                else:
+                    grad_batch = self.__compute_sample_grads__(model, self.memory_x, self.memory_y)
+
+                prv_scores = self.similarity_scores.copy()
+
+                self.memory_x, self.memory_y, self.similarity_scores = mset_manager.update_GSS_greedy(self.memory_x, self.memory_y, 
+                                                                                                      self.similarity_scores, 
+                                                                                                      train_x[idx].reshape((1, -1)), train_y[idx].reshape((-1,)), 
+                                                                                                      grad_sample, grad_batch, class_balanced=self.class_balanced)
+                # Keep track of number of replacements for debugging
+                if debug_mode:
+                    if i % 100 == 0:
+                        print(f'GSS pass: {i}')
+
+                    if i > mset_manager.memory_set_size:
+                        if len(self.similarity_scores) != len(prv_scores):
+                            replacement_counter += 1
+                        else:
+                            diff = np.linalg.norm(self.similarity_scores - prv_scores)
+                            if diff > 0:
+                                replacement_counter += 1
+            # Keep track of number of replacements for debugging
+            if debug_mode:
+                print(f'Number of GSS replacements: {replacement_counter}')
+
+        # Update Lambda memory set
         if memory_set_manager.__class__.__name__ == 'LambdaMemorySetManager':
-            self.memory_set_manager = memory_set_manager
-
-        if memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
-            self.memory_set_manager = memory_set_manager
-            # self.train_weights = torch.ones(self.train_x.shape[0])
-            # self.memory_set_weights = torch.ones(self.memory_x.shape[0])
-            print("empty memory set weights initialized in tasks.py")
-            print("Memory set weights shape in tasks: ", self.memory_set_weights)
-            # self.memory_z = torch.empty(0)
-
-        print("Memory created in tasks.py with number of samples (?): ", len(self.memory_x))
-
-    def modify_memory(self, sample_x, sample_y, outputs=None, grad_sample=None, grad_batch=None):
-
-        if self.memory_set_manager.__class__.__name__ == 'LambdaMemorySetManager':
-            self.memory_x, self.memory_y = self.memory_set_manager.update_memory_lambda(
-                self.memory_x, self.memory_y, sample_x, sample_y, outputs
-            )
-
-        elif self.memory_set_manager.__class__.__name__ == 'GSSMemorySetManager':
-            self.memory_x, self.memory_y, self.C_arr = self.memory_set_manager.update_GSS_greedy(
-                self.memory_x, 
-                self.memory_y, 
-                self.C_arr, 
-                sample_x,
-                sample_y,
-                grad_sample, 
-                grad_batch) #update buffer + scores
-            
-        else:
-            raise NotImplementedError("Only Lambda and GSS Memory Selection methods update memory set in runtime.")
-        
+            self.memory_x, self.memory_y = mset_manager.update_memory(self.memory_x, self.memory_y, self.train_x, self.train_y, output, class_balanced=True)
 
     #GCR functions
     def update_memory_set_weights(self, weights):
@@ -116,7 +144,6 @@ class Task:
         else:
             raise NotImplementedError("Only GCR Memory Selection method updates memory set y in tasks.py")
 
-        
     def get_memory_set_weights(self):
         if self.memory_set_manager.__class__.__name__ == 'GCRMemorySetManager':
             return self.memory_set_weights
