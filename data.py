@@ -714,7 +714,8 @@ class iCaRL(MemorySetManager):
         # set the memory set size according to the size of the first task
         # MNIST has variable task sizes, so always use the first task size
         if self.first_task: 
-            self.memory_set_size = int(self.p * len(x) / 2) # divide by two because we construct a coreset for each class
+            self.memory_set_size = int(self.p * len(x) / 2) # CIFAR10 and MNIST10, divide by two because we construct a coreset for each class
+            # will need to modify this for CIFAR100
             print(f"memory set size is {self.memory_set_size}")
 
         if x.dim() == 2: # only reshape and duplicate color channel if MNIST

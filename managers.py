@@ -180,7 +180,6 @@ class ContinualLearningManager(ABC):
             if self.memory_set_manager.__class__.__name__ == "GCRMemorySetManager":
                 batch_x, batch_w_x = batch_x[:, :-1], batch_x[:, -1]  
 
-            # breakpoint()
             outputs = model(batch_x)
 
             # Only select outputs for current labels
@@ -200,7 +199,6 @@ class ContinualLearningManager(ABC):
             )
             total_examples += batch_x.shape[0]
 
-        # breakpoint()
         task_accs = [cor/total for cor, total in zip(task_wise_correct, task_wise_examples)]
         #R_ji means we are on task j and evaluating on task i
         # Let T be the current task
@@ -352,6 +350,7 @@ class ContinualLearningManager(ABC):
         Y = 2
 
         print(batch_y)
+        breakpoint()
         y_labels = torch.unique(batch_y)
         D_x_y = [batch_x[batch_y == y] for y in y_labels]
         D_y_y = [batch_y[batch_y == y] for y in y_labels]
@@ -844,7 +843,6 @@ class ContinualLearningManager(ABC):
         past_validation_acc = 0.1 # only reset current validation acc after training for one task has finished
         for epoch in tqdm(range(epochs)):
             total_loss = 0
-
             for batch_x, batch_y in train_dataloader:
 
                 batch_x = batch_x.to(DEVICE)
@@ -1272,38 +1270,6 @@ class ContinualLearningManager(ABC):
         running_tasks = self.tasks[: self.task_index + 1]
         return set.union(*[task.task_labels for task in running_tasks])
 
-    
-    def _get_current_labels_new_loss(self):
-        """
-        Creates a list of task labels corresponding to the tasks that have been run.
-        """
-        label_list = []
-        label_weights = []
-        running_tasks = self.tasks[: self.task_index + 1]
-        for task in running_tasks:
-            running_task_labels = list(task.task_labels)
-            label_list.append(running_task_labels)
-            weights = np.zeros(10)
-            for label in running_task_labels:
-                weights[label] = 1/len(running_task_labels)
-            label_weights.append(torch.from_numpy(weights).float())
-        return label_list, label_weights
-    
-# class L_sub(nn.Module):
-#   """inner loss function for selection strategies."""
-
-#   def __init__(self, alpha=0.1, beta=0.5):
-#     super(L_sub, self).__init__()
-#     self.alpha = alpha
-#     self.beta = beta
-#     self.ce_loss = nn.CrossEntropyLoss(reduction='none')
-#     self.mse_loss = nn.MSELoss(reduction='none')
-
-#   def forward(self, outputs, targets, logits, weights=None):
-#     loss = self.beta * self.ce_loss(outputs, targets) + self.alpha * torch.mean(
-#         self.mse_loss(outputs, logits), 1
-#     )
-#     return loss * weights
 
 
 class Cifar100Manager(ContinualLearningManager, ABC):
