@@ -16,6 +16,66 @@ from torch.utils.data import TensorDataset, DataLoader, ConcatDataset, random_sp
 from torch.utils.data.sampler import SubsetRandomSampler
 torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
 
+def make_tasks_data(
+	trainset, 
+	testset, 
+	num_tasks=5, 
+	max_data_size=1000, 
+	classes_per_task=2
+):
+	'''
+	Creates training and test data for T number of tasks with K number of classes per task.
+
+	Args:
+		trainset (pytorch Dataset): training data
+		testset (pytorch Dataset): test data
+		num_tasks (int): total number of tasks to create
+		max_data_size (int): max dataset size for each task
+		classes_per_task (int): number of classes per task
+	Returns:
+		tasks_data (dictionary): training data sets (Tensors), keyed by task
+		test_data (dictionar): test data sets (Tensors), keyed by task
+
+	'''
+
+	# Intialize task data dictionaries
+	tasks_data = {}
+	test_data = {}
+
+	# Initialize task
+	t = 0
+	# Iterate through tasks
+	for c in range(0, num_tasks * classes_per_task, classes_per_task):
+		print(f'task {t}, classes {c}, {c + 1}')
+
+		# Select classes for task t in training set
+		first_two_classes_idx = np.where((np.array(trainset.targets) >= c) & (np.array(trainset.targets) < c + classes_per_task))[0][:max_data_size]
+		imgs, labels = zip(*trainset)
+
+		# Create input and output data as pytoch tensors
+		X = torch.stack(imgs, 0) #turn images into 3-D tensors
+		y = torch.Tensor(labels).long() #turn labels into tensors
+		X = X[first_two_classes_idx] #take subset of images for the current task
+		y = y[first_two_classes_idx] #take subset of labels for the current task
+
+		tasks_data[t] = (X, y) #append train data for task t to dictionary of task training data
+
+		# Select classes for task t in testing set
+		first_two_classes_idx = np.where((np.array(testset.targets) >=  c) & (np.array(testset.targets) < c + classes_per_task))[0][:max_data_size]
+		imgs, labels = zip(*testset)
+
+		X = torch.stack(imgs, 0) #turn images into 3-D tensors
+		y = torch.Tensor(labels).long() #turn labels into tensors
+		X = X[first_two_classes_idx] #take subset of images for the current task
+		y = y[first_two_classes_idx] #take subset of labels for the current task
+
+		test_data[t] = (X, y) #append test data for task t to dictionary of task test data
+
+		# Increment task
+		t += 1
+
+	return tasks_data, test_data
+
 # Evaluate model on batched dataset
 def batch_eval(evalloader, model, criterion, weights=None):
 	'''
@@ -467,12 +527,15 @@ def train_full_models(
 		# Store model
 		models[m] = model
 
-	# Define model path names
-	PATH_1 = f'{PATH}_M1.pth'
-	PATH_2 = f'{PATH}_M2.pth'
-	# Save model weights for M1 and M2
-	torch.save(models['M1'].state_dict(), PATH_1)
-	torch.save(models['M2'].state_dict(), PATH_2)
+	if PATH is not None:
+		# Define model path names
+		PATH_1 = f'{PATH}_M1.pth'
+		PATH_2 = f'{PATH}_M2.pth'
+		# Save model weights for M1 and M2
+		torch.save(models['M1'].state_dict(), PATH_1)
+		torch.save(models['M2'].state_dict(), PATH_2)
+
+	return models
 
 # Compute memory sets for tasks 1 through T-1 using model M1 (pretrained on tasks 1 through T-1)
 def compute_memory_sets(
@@ -671,6 +734,7 @@ def CL_tasks(
 
 	# Initialize performances
 	performances = {}
+	memory_sets = {}
 
 	# Create seeded random generator 
 	generator = torch.Generator().manual_seed(random_seed)
@@ -679,7 +743,7 @@ def CL_tasks(
 	# Train models M1, M2 on full training data sets. Save M1, M2 weights
 	if not use_memory_sets:
 		print('Training models M1 and M2')
-		train_full_models(
+		models = train_full_models(
 			tasks_data, 
 			models,
 			criterion,
@@ -697,12 +761,14 @@ def CL_tasks(
 
 	# Train model M3 on memory sets, compare M3 with M1 and M2
 	else:
-		# Load models M1 and M2 weights
-		PATH_1 = f'{model_PATH}_M1.pth'
-		PATH_2 = f'{model_PATH}_M2.pth'
 
-		models['M1'].load_state_dict(torch.load(PATH_1))
-		models['M2'].load_state_dict(torch.load(PATH_2))
+		# Load models M1 and M2 weights if model PATH provided
+		if model_PATH is not None:
+			PATH_1 = f'{model_PATH}_M1.pth'
+			PATH_2 = f'{model_PATH}_M2.pth'
+
+			models['M1'].load_state_dict(torch.load(PATH_1))
+			models['M2'].load_state_dict(torch.load(PATH_2))
 
 		# Compute memory sets using M1
 		memory_sets, memory_weights = compute_memory_sets(
@@ -752,7 +818,7 @@ def CL_tasks(
 		_, accuracy = batch_eval(testloader, models[m], criterion)
 		performances[m] = accuracy
 
-	return performances, models
+	return performances, models, memory_sets
 
 
 

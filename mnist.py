@@ -21,44 +21,7 @@ torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
 def gray_to_rgb(img):
 	return img.repeat(3, 1, 1)
 
-def make_tasks_data(trainset, testset, num_tasks=5, max_data_size=1000, classes_per_task=2):
-	tasks_data = {}
-	test_data = {}
-
-	# Initialize task
-	t = 0
-	# Iterate through tasks
-	for c in range(0, num_tasks * classes_per_task, classes_per_task):
-		print(f'task {t}, classes {c}, {c + 1}')
-
-		# Select classes for task t in training set
-		first_two_classes_idx = np.where((np.array(trainset.targets) >= c) & (np.array(trainset.targets) < c + classes_per_task))[0][:max_data_size]
-		imgs, labels = zip(*trainset)
-
-		X = torch.stack(imgs, 0) #turn images into 3-D tensors
-		y = torch.Tensor(labels).long() #turn labels into tensors
-		X = X[first_two_classes_idx] #take subset of images for the current task
-		y = y[first_two_classes_idx] #take subset of labels for the current task
-
-		tasks_data[t] = (X, y) #append train data for task t to dictionary of task training data
-
-		# Select classes for task t in testing set
-		first_two_classes_idx = np.where((np.array(testset.targets) >=  c) & (np.array(testset.targets) < c + classes_per_task))[0][:max_data_size]
-		imgs, labels = zip(*testset)
-
-		X = torch.stack(imgs, 0) #turn images into 3-D tensors
-		y = torch.Tensor(labels).long() #turn labels into tensors
-		X = X[first_two_classes_idx] #take subset of images for the current task
-		y = y[first_two_classes_idx] #take subset of labels for the current task
-
-		test_data[t] = (X, y) #append test data for task t to dictionary of task test data
-
-		# Increment task
-		t += 1
-
-	return tasks_data, test_data
-
-def run_mnist():
+def run_mnist(exp_kwargs, train_full_only=True):
 	# Define parameters for MNIST dataset
 	channels = 3
 	feature_dim = 2028
@@ -66,13 +29,13 @@ def run_mnist():
 	input_dim = 16 * 4 * 4
 
 	# Define parameters for task creation
-	max_data_size = 1000
+	max_data_size = 6000
 	classes_per_task = 2 
 	num_tasks = 5
 
 	# Define MNIST experimental parameters
-	model_PATH = './mnist'
-	train_full = False
+	# model_PATH = './mnist'
+	model_PATH = None
 	
 	# Define parameters for instantiating memory selection methods
 	p = 0.01
@@ -89,6 +52,28 @@ def run_mnist():
 
 	# Seed torch generator
 	random_seed = 1
+
+	# Parse experimental parameters
+	if 'p' in exp_kwargs.keys():
+		p = exp_kwargs['p']
+	if 'T' in exp_kwargs.keys():
+		num_tasks = exp_kwargs['T']
+	if 'random_seed' in exp_kwargs.keys():
+		random_seed = exp_kwargs['random_seed']
+	if 'learning_rate' in exp_kwargs.keys():
+		lr = exp_kwargs['learning_rate']
+	if 'batch_size' in exp_kwargs.keys():
+		batch_size = exp_kwargs['batch_size']
+	if 'num_centroids' in exp_kwargs.keys():
+		num_centroids = exp_kwargs['num_centroids']
+	if 'model_training_epoch' in exp_kwargs.keys():
+		model_training_epoch = exp_kwargs['model_training_epoch']
+	if 'early_stopping_threshold' in exp_kwargs.keys():
+		early_stopping_threshold = exp_kwargs['early_stopping_threshold']
+	if 'model_PATH' in exp_kwargs.keys():
+		model_PATH = exp_kwargs['model_PATH']
+
+	# Seed pytorch generator
 	generator = torch.Generator().manual_seed(random_seed)
 
 	# Define data transform for MNIST data
@@ -151,8 +136,8 @@ def run_mnist():
 	}
 
 	# Train model M1 on tasks 0 to T-1, train model M2 on tasks 0 to T; save model weights
-	if train_full:
-		_, _ = CL_tasks(
+	if train_full_only:
+		_, _, _ = CL_tasks(
 			tasks_data, 
 			test_data, 
 			models, 
@@ -161,9 +146,23 @@ def run_mnist():
 			random_seed=1, 
 			**kwargs,
 		)
+
 	# Construct memory sets, train model M3 on memory sets on tasks 0 to T-1 union full training set on task T;
 	# Evaluate model performance and gradient similarities
 	else:
+
+		# If saved model weights are not available, train models M1 and M2
+		if model_PATH is None:
+			_, models, _ = CL_tasks(
+			tasks_data, 
+			test_data, 
+			models, 
+			criterion, 
+			use_memory_sets=False, 
+			random_seed=1, 
+			**kwargs,
+			)
+
 		# Initialize memory set managers
 		managers = [
 			RandomMemorySetManager(p), #random memory set
@@ -174,29 +173,34 @@ def run_mnist():
 			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
 		]
 
-		# Open output file for results
-		f = open('output_MNIST.txt', 'a')
+		# Initialize results
+		results = {}
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:
+
+			# Get the name of the memory set manager
 			memory_set_type = memory_set_manager.__class__.__name__
 			method_name = f'{memory_set_type} memory selection'
 
+			# Append iCaRL loss function type to memory set manager name
 			if memory_set_type == 'iCaRL':
 				kwargs['icarl_loss_type'] = memory_set_manager.loss_type
 				method_name = f'{memory_set_type} memory selection ({memory_set_manager.loss_type})'
 
-			performances, models = CL_tasks(
+			# Create memory sets and train M3
+			performances, models, _ = CL_tasks(
 				tasks_data, 
 				test_data, 
 				models, 
 				criterion, 
-				memory_set_manager, 
+				memory_set_manager=memory_set_manager, 
 				use_memory_sets=True, 
 				random_seed=1, 
 				**kwargs,
 			)
 
+			# Evaluate M3 on test data
 			task_performances = evaluate(
 				models['M3'], 
 				criterion, 
@@ -205,16 +209,14 @@ def run_mnist():
 				generator=generator,
 			)
 
-			print(f'{method_name}, p: {p}, tasks: {num_tasks}, classes per task: {classes_per_task} \n **********************', file=f)
-			print(performances, file=f)
-			print(task_performances, file=f)
-			print('\n\n', file=f)
+			# Append performances to restuls
+			results[method_name] = (performances, task_performances)
 		
-		f.close()
-	return None
+	return results
 
 def main():
-	run_mnist()
-	
+	exp_kwargs = {}
+	run_mnist(exp_kwargs, train_full_only=False)
+
 if __name__ == "__main__":
 	main()
