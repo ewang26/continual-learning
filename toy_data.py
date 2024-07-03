@@ -100,13 +100,17 @@ def make_tasks_data(n_samples, n_classes, tasks=2):
 	return tasks_data, (xmin, xmax), (ymin, ymax)
 
 def main():
+	# Define pipelin parameters
+	model_PATH = './toy'
+	train_full = True
+
 	# Define experiment parameters
 	n_classes = 2
 	n_samples = 400
 	input_dim = 2
 	feature_dim = 120
-	model_training_epoch = 20
 	classes_per_task = 2
+	model_training_epoch = 20
 	check_point = 1
 	random_seed = 1
 	early_stopping_threhold = 0.05
@@ -116,97 +120,132 @@ def main():
 	device = 'cpu'
 	num_exemplars = int(p * n_samples / 2.)
 	output_dim = 4
-	icarl_loss_type = 'replay'
-
-	# Define memory sets
-	#random memory set
-	random_mset = RandomMemorySetManager(p)
-	#kmeans memory set
-	kmeans_mset = KMeansMemorySetManager(p, num_centroids, device, max_iter=kmeans_max_iter)
-	#lambda memory set
-	lambda_mset = LambdaMemorySetManager(p)
-	#GSS memory set
-	GSS_mset = GSSMemorySetManager(p)
-	#icarl memory set
-	icarl = iCaRL(input_dim, feature_dim, num_exemplars, p, architecture='fc')
-	
-	method = f'iCaRL ({icarl_loss_type} loss)'
-	mset_manager = icarl
 
 	# Make data for two tasks, two classes each
 	tasks_data, xlim, ylim = make_tasks_data(n_samples, n_classes)
 
-	# Plot memory sets against data
-	fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-	cm = {0: plt.cm.PRGn, 1: plt.cm.bwr} #color map for data
-	memory_cm = {0: ['purple', 'green'], 1: ['blue', 'red']} #colors for memory sets
-
-	# Scatter plot the data for the tasks
-	for t in tasks_data.keys():
-		X = tasks_data[t][0]
-		y = tasks_data[t][1]
-		classes = np.unique(y)
-		X_0 = X[y == classes[0]]
-		X_1 = X[y == classes[1]]
-
-		ax[t].scatter(X_0[:, 0], X_0[:, 1], s=40, marker='o', c=memory_cm[t][0], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
-		ax[t].scatter(X_1[:, 0], X_1[:, 1], s=40, marker='o', c=memory_cm[t][1], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
-		
-		if t == 0:
-			ax[t + 1].scatter(X_0[:, 0], X_0[:, 1], s=40, marker='o', c=memory_cm[t][0], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
-			ax[t + 1].scatter(X_1[:, 0], X_1[:, 1], s=40, marker='o', c=memory_cm[t][1], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
-
 	# Instantiate feedforward model & loss
-	model = FCnet(input_dim, output_dim)
-	criterion = nn.CrossEntropyLoss()
+	# Instantiate models
+	model_keys = ['M1', 'M2', 'M3']
+	models = {}
+	for key in model_keys:
+		torch.manual_seed(random_seed)
+		models[key] = FCnet(input_dim, output_dim)
+	
+	# Define training loss
+	criterion = nn.CrossEntropyLoss(reduction='none') #no reduction, for per-sample weights
 
-	# Define arguments for the CL task
-	kwargs = {'model_training_epoch': model_training_epoch, 
-			  'check_point': check_point, 
-			  'early_stopping_threhold': early_stopping_threhold,
-			  'icarl_loss_type': icarl_loss_type}
-	# Train and evaluate CL task
-	performances, backward_transfer, memory_sets, models = CL_tasks(tasks_data, model, criterion, mset_manager, random_seed=random_seed, return_models=True, **kwargs)
 
-	# Compute and plot memory sets for each task
-	for t in tasks_data.keys():
+	# Define parameters for CL training
+	kwargs = {
+		'model_training_epoch': model_training_epoch, 
+		'check_point': check_point, 
+		'early_stopping_threshold': early_stopping_threshold, 
+		'lr': lr,
+		'model_PATH': model_PATH,
+		'class_balanced': True,
+	}
 
-		memory_x = memory_sets[t][0]
-		memory_y = memory_sets[t][1]
 
-		model = models[t]
+	# Train model M1 on tasks 0 to T-1, train model M2 on tasks 0 to T; save model weights
+	if train_full:
+		_, _, _ = CL_tasks(
+			tasks_data, 
+			test_data, 
+			models, 
+			criterion, 
+			use_memory_sets=False, 
+			random_seed=1, 
+			**kwargs,
+		)
+	# Construct memory sets, train model M3 on memory sets on tasks 0 to T-1 union full training set on task T;
+	# Evaluate model performance and gradient similarities
+	else:
+		# Initialize memory set managers
+		managers = [
+			RandomMemorySetManager(p), #random memory set
+			KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+			LambdaMemorySetManager(p), #lambda memory set
+			GSSMemorySetManager(p), #GSS memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
+		]
 
-		classes = np.unique(memory_y)
-		current_classes = classes_per_task * (t + 1)
+		# Iterate through all memory managers
+		for memory_set_manager in managers:
+			memory_set_type = memory_set_manager.__class__.__name__
 
-		mset_0 = memory_x[memory_y == classes[0]]
-		mset_1 = memory_x[memory_y == classes[1]]
-		
-		if t == 0:
-			task_cm = ListedColormap(memory_cm[t])
-			ax[t] = plot_decision_boundary(model, ax[t], task_cm, xlim, ylim, current_classes, steps=1000)
-		else:
-			complete_cm = ListedColormap(memory_cm[t - 1] + memory_cm[t])
-			ax[t] = plot_decision_boundary(model, ax[t], complete_cm, xlim, ylim, current_classes, steps=1000)
+			if memory_set_type == 'iCaRL':
+				kwargs['icarl_loss_type'] = memory_set_manager.loss_type
+				memory_set_type += f' (memory_set_manager.loss_type) '
 
-		ax[t].scatter(mset_0[:, 0], mset_0[:, 1], s=10, marker='^', c=memory_cm[t][0], alpha=0.7, label=f'Memory Set (Task {t})')
-		ax[t].scatter(mset_1[:, 0], mset_1[:, 1], s=10, marker='^', c=memory_cm[t][1], alpha=0.7, label=f'Memory Set (Task {t})')
-		if t == 0:
-			ax[t + 1].scatter(mset_0[:, 0], mset_0[:, 1], s=10, marker='^', c=memory_cm[t][0], alpha=0.7, label=f'Memory Set (Task {t})')
-			ax[t + 1].scatter(mset_1[:, 0], mset_1[:, 1], s=10, marker='^', c=memory_cm[t][1], alpha=0.7, label=f'Memory Set (Task {t})')
+			performances, models, memory_sets = CL_tasks(
+				tasks_data, 
+				test_data, 
+				models, 
+				criterion, 
+				memory_set_manager, 
+				use_memory_sets=True, 
+				random_seed=1, 
+				**kwargs,
+			)
 
-		if t == 1:
-			legend = ax[t].legend(loc='best', bbox_to_anchor=(1.1, 1.05))
-			for lh in legend.legend_handles: 
-				lh.set_alpha(1)
+			# Plot memory sets against data
+			fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+			cm = {0: plt.cm.PRGn, 1: plt.cm.bwr} #color map for data
+			memory_cm = {0: ['purple', 'green'], 1: ['blue', 'red']} #colors for memory sets
 
-		ax[t].set_title(f'Memory Set Selection: {method} (Task {t})')
+			# Scatter plot the data for the tasks
+			for t in tasks_data.keys():
+				X = tasks_data[t][0]
+				y = tasks_data[t][1]
+				classes = np.unique(y)
+				X_0 = X[y == classes[0]]
+				X_1 = X[y == classes[1]]
 
-	# Print performances
-	print(f'{method} performance: {performances}')
-	fig.savefig(f'toy_{method}.png', bbox_extra_artists=(legend,), bbox_inches='tight', dpi=fig.dpi)
-	plt.tight_layout()
-	plt.show()	
+				ax[t].scatter(X_0[:, 0], X_0[:, 1], s=40, marker='o', c=memory_cm[t][0], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
+				ax[t].scatter(X_1[:, 0], X_1[:, 1], s=40, marker='o', c=memory_cm[t][1], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
+				
+				if t == 0:
+					ax[t + 1].scatter(X_0[:, 0], X_0[:, 1], s=40, marker='o', c=memory_cm[t][0], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
+					ax[t + 1].scatter(X_1[:, 0], X_1[:, 1], s=40, marker='o', c=memory_cm[t][1], edgecolors='none', alpha=0.1, label=f'Data (Task {t})')
+
+			# Plot memory sets for each task
+			for t in tasks_data.keys():
+				memory_x = memory_sets[t][0]
+				memory_y = memory_sets[t][1]
+
+				model = models[t]
+
+				classes = np.unique(memory_y)
+				current_classes = classes_per_task * (t + 1)
+
+				mset_0 = memory_x[memory_y == classes[0]]
+				mset_1 = memory_x[memory_y == classes[1]]
+				
+				if t == 0:
+					task_cm = ListedColormap(memory_cm[t])
+					ax[t] = plot_decision_boundary(model, ax[t], task_cm, xlim, ylim, current_classes, steps=1000)
+				else:
+					complete_cm = ListedColormap(memory_cm[t - 1] + memory_cm[t])
+					ax[t] = plot_decision_boundary(model, ax[t], complete_cm, xlim, ylim, current_classes, steps=1000)
+
+				ax[t].scatter(mset_0[:, 0], mset_0[:, 1], s=10, marker='^', c=memory_cm[t][0], alpha=0.7, label=f'Memory Set (Task {t})')
+				ax[t].scatter(mset_1[:, 0], mset_1[:, 1], s=10, marker='^', c=memory_cm[t][1], alpha=0.7, label=f'Memory Set (Task {t})')
+				if t == 0:
+					ax[t + 1].scatter(mset_0[:, 0], mset_0[:, 1], s=10, marker='^', c=memory_cm[t][0], alpha=0.7, label=f'Memory Set (Task {t})')
+					ax[t + 1].scatter(mset_1[:, 0], mset_1[:, 1], s=10, marker='^', c=memory_cm[t][1], alpha=0.7, label=f'Memory Set (Task {t})')
+
+				if t == 1:
+					legend = ax[t].legend(loc='best', bbox_to_anchor=(1.1, 1.05))
+					for lh in legend.legend_handles: 
+						lh.set_alpha(1)
+
+				ax[t].set_title(f'Memory Set Selection: {method} (Task {t})')
+
+			fig.savefig(f'toy_{memory_set_type}.png', bbox_extra_artists=(legend,), bbox_inches='tight', dpi=fig.dpi)
+			plt.tight_layout()
+			plt.show()	
 
 if __name__ == "__main__":
 	main()
