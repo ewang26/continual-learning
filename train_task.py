@@ -16,6 +16,7 @@ from torch.utils.data import TensorDataset, DataLoader, ConcatDataset, random_sp
 from torch.utils.data.sampler import SubsetRandomSampler
 torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
 
+# Split data into tasks, each with an equal number of classes
 def make_tasks_data(
 	trainset, 
 	testset, 
@@ -75,6 +76,21 @@ def make_tasks_data(
 		t += 1
 
 	return tasks_data, test_data
+
+# Compute gradients of model at a batch of data
+def get_gradients(X, y, model, criterion):
+	'''
+	Computes the gradients of a model evaluated at a batch of data
+	'''
+	outputs = model(X)
+	loss = criterion(outputs, y)
+	loss.backward()
+
+	grad_list = []
+	for name, p in model.named_parameters():
+	    grad_list.append(p.grad.clone().detach().cpu().numpy().flatten())
+
+	return np.concatenate(grad_list)
 
 # Evaluate model on batched dataset
 def batch_eval(evalloader, model, criterion, weights=None):

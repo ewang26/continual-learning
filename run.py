@@ -45,6 +45,7 @@ QUEUE = [
         model_training_epoch=[20], # consider [10, 20, 50]
         early_stopping_threshold=[1.], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(20),
+        class_balanced=[True, False],
         ),
     ),
     ('cifar10', dict(
@@ -56,6 +57,7 @@ QUEUE = [
         model_training_epoch=[20], # consider [10, 20, 50]
         early_stopping_threshold=[5.], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(20),
+        class_balanced=[True, False],
         ),
     ),
 ]

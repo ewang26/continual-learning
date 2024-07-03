@@ -72,6 +72,8 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		early_stopping_threshold = exp_kwargs['early_stopping_threshold']
 	if 'model_PATH' in exp_kwargs.keys():
 		model_PATH = exp_kwargs['model_PATH']
+	if 'class_balanced' in exp_kwargs.keys():
+		class_balanced = exp_kwargs['class_balanced']
 
 	# Seed pytorch generator
 	generator = torch.Generator().manual_seed(random_seed)
@@ -132,7 +134,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		'early_stopping_threshold': early_stopping_threshold, 
 		'lr': lr,
 		'model_PATH': model_PATH,
-		'class_balanced': True,
+		'class_balanced': class_balanced,
 	}
 
 	# Train model M1 on tasks 0 to T-1, train model M2 on tasks 0 to T; save model weights
@@ -210,7 +212,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 			)
 
 			# Append performances to restuls
-			results[method_name] = (performances, task_performances)
+			results[method_name] = {'model performances': performances, 'M3 per task performance': task_performances}
 		
 	return results
 
