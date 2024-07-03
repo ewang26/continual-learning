@@ -467,12 +467,15 @@ def train_full_models(
 		# Store model
 		models[m] = model
 
-	# Define model path names
-	PATH_1 = f'{PATH}_M1.pth'
-	PATH_2 = f'{PATH}_M2.pth'
-	# Save model weights for M1 and M2
-	torch.save(models['M1'].state_dict(), PATH_1)
-	torch.save(models['M2'].state_dict(), PATH_2)
+	if PATH is not None:
+		# Define model path names
+		PATH_1 = f'{PATH}_M1.pth'
+		PATH_2 = f'{PATH}_M2.pth'
+		# Save model weights for M1 and M2
+		torch.save(models['M1'].state_dict(), PATH_1)
+		torch.save(models['M2'].state_dict(), PATH_2)
+
+	return models
 
 # Compute memory sets for tasks 1 through T-1 using model M1 (pretrained on tasks 1 through T-1)
 def compute_memory_sets(
@@ -671,6 +674,7 @@ def CL_tasks(
 
 	# Initialize performances
 	performances = {}
+	memory_sets = {}
 
 	# Create seeded random generator 
 	generator = torch.Generator().manual_seed(random_seed)
@@ -679,7 +683,7 @@ def CL_tasks(
 	# Train models M1, M2 on full training data sets. Save M1, M2 weights
 	if not use_memory_sets:
 		print('Training models M1 and M2')
-		train_full_models(
+		models = train_full_models(
 			tasks_data, 
 			models,
 			criterion,
@@ -697,12 +701,14 @@ def CL_tasks(
 
 	# Train model M3 on memory sets, compare M3 with M1 and M2
 	else:
-		# Load models M1 and M2 weights
-		PATH_1 = f'{model_PATH}_M1.pth'
-		PATH_2 = f'{model_PATH}_M2.pth'
 
-		models['M1'].load_state_dict(torch.load(PATH_1))
-		models['M2'].load_state_dict(torch.load(PATH_2))
+		# Load models M1 and M2 weights if model PATH provided
+		if model_PATH is not None:
+			PATH_1 = f'{model_PATH}_M1.pth'
+			PATH_2 = f'{model_PATH}_M2.pth'
+
+			models['M1'].load_state_dict(torch.load(PATH_1))
+			models['M2'].load_state_dict(torch.load(PATH_2))
 
 		# Compute memory sets using M1
 		memory_sets, memory_weights = compute_memory_sets(
@@ -752,7 +758,7 @@ def CL_tasks(
 		_, accuracy = batch_eval(testloader, models[m], criterion)
 		performances[m] = accuracy
 
-	return performances, models
+	return performances, models, memory_sets
 
 
 
