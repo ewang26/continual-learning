@@ -194,7 +194,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 				test_data, 
 				models, 
 				criterion, 
-				memory_set_manager, 
+				memory_set_manager=memory_set_manager, 
 				use_memory_sets=True, 
 				random_seed=1, 
 				**kwargs,
