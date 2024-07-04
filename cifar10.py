@@ -76,7 +76,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 		max_data_size = exp_kwargs['max_data_size']
 
 	# Define parameters for instantiating memory selection methods
-	num_exemplars = int(p * max_data_size / 2.)
+	num_exemplars = int(p * max_data_size / classes_per_task)
 
 	# Seed pytorch generator
 	generator = torch.Generator().manual_seed(random_seed)
@@ -139,7 +139,6 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 		'model_PATH': model_PATH,
 		'class_balanced': class_balanced,
 	}
-
 
 	# Initialize results
 	results = {}

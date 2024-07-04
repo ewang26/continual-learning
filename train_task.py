@@ -691,7 +691,7 @@ def compute_memory_sets(
 			# 		if diff > 0:
 			# 			replacement_counter += 1
 			# print('Number of GSS replacements:', replacement_counter) #for debugging
-			
+		
 		assert (memory_x.shape[0] == int(int(memory_set_manager.p * X.shape[0]) / classes_per_task) * classes_per_task or (memory_x.shape[0]) == int(memory_set_manager.p * X.shape[0]))
 
 		# If not GCR, set memory set weights to 1/p

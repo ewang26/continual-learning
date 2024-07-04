@@ -12,10 +12,11 @@ CIFAR10_ARCH = {
     "l3_out_channels": 64,
     "l4_out_channels": 64,
 }
+# WP: please adjust CIFAR100 architecture
 # TODO CIFAR100 Should use larger network
 CIFAR100_ARCH = {
     "in_channels": 3,
-    "out_channels": 10,
+    "out_channels": 100,
     "l1_out_channels": 32,
     "l2_out_channels": 32,
     "l3_out_channels": 64,

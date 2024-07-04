@@ -52,14 +52,14 @@ class MemorySetManager(ABC):
 
 # CNN for MNIST & CIFAR
 class ResnetFeatureExtractor(nn.Module):
-    def __init__(self, input_dim, feature_size):
+    def __init__(self, input_dim, feature_size, n_heads=2):
         super().__init__()
         self.feature_extractor = resnet18(pretrained=True)
         self.feature_extractor.fc = nn.Linear(self.feature_extractor.fc.in_features, feature_size)
         self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
         self.ReLU = nn.ReLU()
         # Linear layer: one head for each classes
-        self.fc = nn.Linear(feature_size, 2) #initially only two heads
+        self.fc = nn.Linear(feature_size, n_heads) #initially n number of heads
 
 
     def forward(self, x):
@@ -505,6 +505,7 @@ class GSSMemorySetManager(MemorySetManager):
 # WP: Checked for single task and incremental setting
 class iCaRL(nn.Module):
     def __init__(self, input_dim, feature_size, num_exemplars, p, 
+                 classes_per_task=2, 
                  random_seed=42, num_epochs=10, batch_size=64, learning_rate=0.002, 
                  loss_type='icarl', architecture='cnn'):
         super(iCaRL, self).__init__()
@@ -518,7 +519,7 @@ class iCaRL(nn.Module):
         # Feature Extractor architecture for image data
         if architecture == 'cnn':
             torch.manual_seed(random_seed)
-            self.network = ResnetFeatureExtractor(input_dim, feature_size)
+            self.network = ResnetFeatureExtractor(input_dim, feature_size, classes_per_task)
         # Simple feature extractor architecture for toy data
         else:
             torch.manual_seed(random_seed)
