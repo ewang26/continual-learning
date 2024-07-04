@@ -123,7 +123,7 @@ def main():
 	output_dim = 6
 	feature_dim = 120
 	classes_per_task = 2
-	model_training_epoch = 15
+	model_training_epoch = 5
 	lr = 0.001
 	check_point = 1
 	random_seed = 1
@@ -162,7 +162,7 @@ def main():
 
 	# Train model M1 on tasks 0 to T-1, train model M2 on tasks 0 to T; save model weights
 	if train_full_only:
-		_, _, _ = CL_tasks(
+		_, _, _, _ = CL_tasks(
 			tasks_data, 
 			tasks_data, 
 			models, 
@@ -193,7 +193,7 @@ def main():
 				kwargs['icarl_loss_type'] = memory_set_manager.loss_type
 				memory_set_type += f' ({memory_set_manager.loss_type}) '
 
-			performances, models, memory_sets = CL_tasks(
+			performances, grad_similarities, models, memory_sets = CL_tasks(
 				tasks_data, 
 				tasks_data, 
 				models, 
@@ -253,17 +253,13 @@ def main():
 			for lh in legend.legend_handles: 
 				lh.set_alpha(1)
 
-
-
-			# Evaluate M3 on train data
+			# Evaluate M2 on train data
 			task_performances = evaluate(
 				models['M2'], 
 				criterion, 
 				tasks_data, 
 				batch_size=10, 
 			)
-
-			print(task_performances)
 
 			# Evaluate M3 on train data
 			task_performances = evaluate(
@@ -273,7 +269,14 @@ def main():
 				batch_size=10, 
 			)
 
+			print('M2 per-task performance')
 			print(task_performances)
+
+			print('M3 per-task performance')
+			print(task_performances)
+
+			print('Gradient similarities')
+			print(grad_similarities)
 
 			fig.savefig(f'toy_{memory_set_type}.png', bbox_extra_artists=(legend,), bbox_inches='tight', dpi=fig.dpi)
 			# plt.tight_layout()
