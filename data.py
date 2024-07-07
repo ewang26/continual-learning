@@ -50,17 +50,16 @@ class MemorySetManager(ABC):
         """Creates a memory set from the given dataset. The memory set is a subset of the dataset."""
         pass
 
-
 # CNN for MNIST & CIFAR
 class ResnetFeatureExtractor(nn.Module):
-    def __init__(self, input_dim, feature_size):
+    def __init__(self, input_dim, feature_size, n_heads=2):
         super().__init__()
         self.feature_extractor = resnet18(pretrained=True)
         self.feature_extractor.fc = nn.Linear(self.feature_extractor.fc.in_features, feature_size)
         self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
         self.ReLU = nn.ReLU()
         # Linear layer: one head for each classes
-        self.fc = nn.Linear(feature_size, 2) #initially only two heads
+        self.fc = nn.Linear(feature_size, n_heads) #initially n number of heads
 
 
     def forward(self, x):
@@ -112,7 +111,7 @@ class RandomMemorySetManager(MemorySetManager):
     # Randomly select elements from the dataset to be in the memory set.
     @torch.no_grad()
     def create_memory_set(
-        self, x: Float[Tensor, "n f"], y: Float[Tensor, "n"]
+        self, x: Float[Tensor, "n f"], y: Float[Tensor, "n"], class_balanced=True,
     ) -> Tuple[Float[Tensor, "m f"], Float[Tensor, "m"]]:
         """Creates random memory set.
 
@@ -130,13 +129,34 @@ class RandomMemorySetManager(MemorySetManager):
 
         else:
             memory_set_size = int(x.shape[0] * self.p)
-            # Select memeory set random elements from x and y, without replacement
-            memory_set_indices = torch.randperm(x.shape[0], generator=self.generator)[
-                :memory_set_size
-            ]
 
-            memory_x = x[memory_set_indices]
-            memory_y = y[memory_set_indices]
+            if class_balanced:
+                memory_set_size = int(x.shape[0] * self.p)
+                classes = torch.unique(y)
+                num_classes = len(classes)
+                num_exemplars = int(memory_set_size / num_classes)
+
+                memory_x = []
+                memory_y = []
+
+                for c in classes:
+                    x_c = x[y == c]
+                    y_c = y[y == c]
+
+                    memory_set_indices = torch.randperm(x_c.shape[0], generator=self.generator)[:num_exemplars]
+
+                    memory_x.append(x_c[memory_set_indices])
+                    memory_y.append(y_c[memory_set_indices])
+
+                memory_x = torch.cat(memory_x, dim=0)
+                memory_y = torch.cat(memory_y, dim=0)
+
+            else:
+                # Select memeory set random elements from x and y, without replacement
+                memory_set_indices = torch.randperm(x.shape[0], generator=self.generator)[:memory_set_size]
+
+                memory_x = x[memory_set_indices]
+                memory_y = y[memory_set_indices]
 
         return memory_x, memory_y
 
@@ -485,6 +505,7 @@ class GSSMemorySetManager(MemorySetManager):
 # WP: Checked for single task and incremental setting
 class iCaRL(nn.Module):
     def __init__(self, input_dim, feature_size, num_exemplars, p, 
+                 classes_per_task=2, 
                  random_seed=42, num_epochs=10, batch_size=64, learning_rate=0.002, 
                  loss_type='icarl', architecture='cnn'):
         super(iCaRL, self).__init__()
@@ -498,7 +519,7 @@ class iCaRL(nn.Module):
         # Feature Extractor architecture for image data
         if architecture == 'cnn':
             torch.manual_seed(random_seed)
-            self.network = ResnetFeatureExtractor(input_dim, feature_size)
+            self.network = ResnetFeatureExtractor(input_dim, feature_size, classes_per_task)
         # Simple feature extractor architecture for toy data
         else:
             torch.manual_seed(random_seed)

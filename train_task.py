@@ -16,6 +16,7 @@ from torch.utils.data import TensorDataset, DataLoader, ConcatDataset, random_sp
 from torch.utils.data.sampler import SubsetRandomSampler
 torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
 
+# Split data into tasks, each with an equal number of classes
 def make_tasks_data(
 	trainset, 
 	testset, 
@@ -75,6 +76,84 @@ def make_tasks_data(
 		t += 1
 
 	return tasks_data, test_data
+
+# Combine memory sets from previous tasks
+def combine_memory_sets(memory_sets, omit_task=0):
+	'''
+	Combines a dictionary of memory sets, keyed by tasks, into a single pytorch Tensor.
+	'''
+
+	memory_x = []
+	memory_y = []
+
+	for t in range(len(memory_sets.keys()) - omit_task):
+		X = memory_sets[t][0]
+		y = memory_sets[t][1]
+		task_size = X.shape[0]
+
+		# Concatenate indices to input data as a column for matching data to corresponding weight
+		indices = torch.arange(task_size) #indices for data
+		y = torch.stack((y, indices), dim=1) #add indices to input as the last column
+
+		memory_x.append(X)
+		memory_y.append(y)
+
+	memory_x = torch.cat(memory_x, dim=0)
+	memory_y = torch.cat(memory_y, dim=0)
+
+	return memory_x, memory_y
+
+# Compute gradients of model at a batch of data
+def get_gradients(X, y, model, criterion, weights=None):
+	'''
+	Computes the gradients of a model evaluated at a batch of data
+	'''
+
+	outputs = model(X)
+	# Compute per datapoint weights
+	indices = y[:, -1].flatten()
+	y = y[:, :-1].flatten()
+	if weights is not None:
+		assert len(weights) == len(y)
+	else: 
+		weights = torch.ones(y.shape[0])
+
+	loss = criterion(outputs, y)
+	assert loss.shape == y.shape #unreduced loss should have same shape as y's in each batch
+	loss = torch.sum(loss * weights) #sum of element-wise multiplication of loss and weights
+	loss.backward()
+
+	grad_list = []
+	for name, p in model.named_parameters():
+	    grad_list.append(p.grad.clone().detach().cpu().numpy().flatten())
+
+	return np.concatenate(grad_list)
+
+# Compute gradient similarity
+def comupte_gradient_similarity(model_1, model_2, memory_sets, memory_weights, tasks_data, criterion):
+	'''
+	Computes the gradient similarity between each model evaluated on the memory sets and on the full training set for tasks 1 through T-1.
+	'''
+
+	# Combine memory sets for tasks 1 through T-1
+	combined_memory_x, combined_memory_y = combine_memory_sets(memory_sets)
+	combined_memory_weights = torch.cat([*memory_weights.values()], dim=0)
+	# Evaluate model gradients on combined memory set
+	model_1_memory_grad = get_gradients(combined_memory_x, combined_memory_y, model_1, criterion, combined_memory_weights)
+	model_2_memory_grad = get_gradients(combined_memory_x, combined_memory_y, model_2, criterion, combined_memory_weights)
+
+	# Combine training data for tasks 1 through T-1
+	combined_train_x, combined_train_y = combine_memory_sets(tasks_data, omit_task=1) #note that combine_memory_set doesn't care if the input is memory sets or full training data
+	# Evaluate model gradients on combined memory set
+	model_1_full_grad = get_gradients(combined_train_x, combined_train_y, model_1, criterion)
+	model_2_full_grad = get_gradients(combined_train_x, combined_train_y, model_2, criterion)
+
+	# Compute gradient similarity for model 1 on memory sets vs model 1 on full training sets
+	sim_memory_1 = np.dot(model_1_memory_grad, model_1_full_grad) / (np.linalg.norm(model_1_memory_grad) * np.linalg.norm(model_1_full_grad))
+	# Compute gradient similarity for model 2 on memory sets vs model 2 on full training sets
+	sim_memory_2 = np.dot(model_2_memory_grad, model_2_full_grad) / (np.linalg.norm(model_2_memory_grad) * np.linalg.norm(model_2_full_grad))
+
+	return sim_memory_1, sim_memory_2
 
 # Evaluate model on batched dataset
 def batch_eval(evalloader, model, criterion, weights=None):
@@ -224,32 +303,6 @@ def train_validation_split(X, y, val_p=0.1, generator=None):
 	trainset, valset = random_split(dataset, [data_size - val_size, val_size], generator=generator)
 
 	return trainset, valset
-
-# Combine memory sets from previous tasks
-def combine_memory_sets(memory_sets):
-	'''
-	Combines a dictionary of memory sets, keyed by tasks, into a single pytorch Tensor.
-	'''
-
-	memory_x = []
-	memory_y = []
-
-	for t in memory_sets.keys():
-		X = memory_sets[t][0]
-		y = memory_sets[t][1]
-		task_size = X.shape[0]
-
-		# Concatenate indices to input data as a column for matching data to corresponding weight
-		indices = torch.arange(task_size) #indices for data
-		y = torch.stack((y, indices), dim=1) #add indices to input as the last column
-
-		memory_x.append(X)
-		memory_y.append(y)
-
-	memory_x = torch.cat(memory_x, dim=0)
-	memory_y = torch.cat(memory_y, dim=0)
-
-	return memory_x, memory_y
 
 # Train the model
 def train(
@@ -638,7 +691,8 @@ def compute_memory_sets(
 			# 		if diff > 0:
 			# 			replacement_counter += 1
 			# print('Number of GSS replacements:', replacement_counter) #for debugging
-		assert memory_x.shape[0] == int(memory_set_manager.p * X.shape[0])
+		
+		assert (memory_x.shape[0] == int(int(memory_set_manager.p * X.shape[0]) / classes_per_task) * classes_per_task or (memory_x.shape[0]) == int(memory_set_manager.p * X.shape[0]))
 
 		# If not GCR, set memory set weights to 1/p
 		if memory_set_manager.__class__.__name__ != 'GCRMemorySetManager':
@@ -732,8 +786,9 @@ def CL_tasks(
 	if 'momentum' in kwargs.keys():
 		momentum = kwargs['momentum']
 
-	# Initialize performances
+	# Initialize performances, gradient similariites and memory sets
 	performances = {}
+	grad_similarities = {}
 	memory_sets = {}
 
 	# Create seeded random generator 
@@ -770,7 +825,7 @@ def CL_tasks(
 			models['M1'].load_state_dict(torch.load(PATH_1))
 			models['M2'].load_state_dict(torch.load(PATH_2))
 
-		# Compute memory sets using M1
+		# Compute memory sets, using M1 if gradients are required
 		memory_sets, memory_weights = compute_memory_sets(
 			tasks_data, 
 			classes_per_task, 
@@ -779,6 +834,11 @@ def CL_tasks(
 			rand,
 			class_balanced=class_balanced, 
 		)
+
+		# Compute gradient similarity for M1 and M2 on full training data dn on memory sets
+		M1_sim, M2_sim = comupte_gradient_similarity(models['M1'], models['M2'], memory_sets, memory_weights, tasks_data, criterion)
+		grad_similarities['M1'] = M1_sim
+		grad_similarities['M2'] = M2_sim
 
 		# Create train, validation DataLoaders for model M3
 		trainloaders, valloaders, testloader, data_weights = create_dataloaders(
@@ -814,11 +874,14 @@ def CL_tasks(
 
 		# Store trained model M3 and callbacks
 		models[m] = model
+
 		# Evaluate model M3 on test data for tasks 1 through T
 		_, accuracy = batch_eval(testloader, models[m], criterion)
+
+		# Store model M3's performance on combined test data for tasks 1 through T
 		performances[m] = accuracy
 
-	return performances, models, memory_sets
+	return performances, grad_similarities, models, memory_sets
 
 
 

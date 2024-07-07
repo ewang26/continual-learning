@@ -18,10 +18,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
 torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
 
-def gray_to_rgb(img):
-	return img.repeat(3, 1, 1)
-
-def run_mnist(exp_kwargs, train_full_only=True):
+def run_cifar100(exp_kwargs, train_full_only=True):
 	# Define parameters for MNIST dataset
 	channels = 3
 	feature_dim = 2028
@@ -30,11 +27,11 @@ def run_mnist(exp_kwargs, train_full_only=True):
 
 	# Define parameters for task creation
 	max_data_size = 6000
-	classes_per_task = 2 
-	num_tasks = 5
+	classes_per_task = 10 
+	num_tasks = 3
 
-	# Define MNIST experimental parameters
-	# model_PATH = './mnist'
+	# Define CIFAR experimental parameters
+	# model_PATH = './cifar10'
 	model_PATH = None
 	
 	# Define parameters for instantiating memory selection methods
@@ -45,8 +42,8 @@ def run_mnist(exp_kwargs, train_full_only=True):
 	
 	
 	# Deinfe CL pipline parameters
-	batch_size = 10
-	model_training_epoch = 10
+	batch_size = 50
+	model_training_epoch = 30
 	check_point = 1
 	lr = 0.001
 	early_stopping_threshold = 5.
@@ -77,6 +74,8 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		class_balanced = exp_kwargs['class_balanced']
 	if 'max_data_size' in exp_kwargs.keys():
 		max_data_size = exp_kwargs['max_data_size']
+	if 'classes_per_task' in exp_kwargs.keys():
+		classes_per_task = exp_kwargs['classes_per_task']
 
 	# Define parameters for instantiating memory selection methods
 	num_exemplars = int(p * max_data_size / classes_per_task)
@@ -84,25 +83,20 @@ def run_mnist(exp_kwargs, train_full_only=True):
 	# Seed pytorch generator
 	generator = torch.Generator().manual_seed(random_seed)
 
-	# Define data transform for MNIST data
-	transform = transforms.Compose([transforms.ToTensor(), 
-									transforms.Lambda(gray_to_rgb), 
-									transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-	# Generate MNIST training data
-	trainset = torchvision.datasets.MNIST(
+	# Generate CIFAR training data
+	transform = transforms.Compose([transforms.ToTensor(),
+								    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+	trainset = torchvision.datasets.CIFAR100(
 		root='./data', 
 		train=True,
-	    download=True, 
-	    transform=transform,
+		download=True, 
+		transform=transform,
 	)
-
-	# Generate MNIST test data
-	testset = torchvision.datasets.MNIST(
+	testset = torchvision.datasets.CIFAR100(
 		root='./data', 
 		train=False,
-	    download=True, 
-	    transform=transform,
+		download=True, 
+		transform=transform,
 	)
 
 	# Create data for tasks
@@ -125,13 +119,18 @@ def run_mnist(exp_kwargs, train_full_only=True):
 	criterion = nn.CrossEntropyLoss(reduction='none') #no reduction, for per-sample weights
 
 	# Instantiate models
-	torch.manual_seed(random_seed)
-	model_1 = MNISTNet(in_channels=3, out_channels=10)
-	torch.manual_seed(random_seed)
-	model_2 = MNISTNet(in_channels=3, out_channels=10)
-	torch.manual_seed(random_seed)
-	model_3 = MNISTNet(in_channels=3, out_channels=10)
-	models = {'M1': model_1, 'M2': model_2, 'M3': model_3}
+	model_keys = ['M1', 'M2', 'M3']
+	models = {}
+	for key in model_keys:
+		torch.manual_seed(random_seed)
+		models[key] = CifarNet(
+			CIFAR100_ARCH["in_channels"],
+			CIFAR100_ARCH["out_channels"],
+			CIFAR100_ARCH["l1_out_channels"],
+			CIFAR100_ARCH["l2_out_channels"],
+			CIFAR100_ARCH["l3_out_channels"],
+			CIFAR100_ARCH["l4_out_channels"],
+		)
 
 	# Define parameters for CL training
 	kwargs = {
@@ -141,6 +140,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		'lr': lr,
 		'model_PATH': model_PATH,
 		'class_balanced': class_balanced,
+		'classes_per_task': classes_per_task,
 	}
 
 	# Initialize results
@@ -180,8 +180,8 @@ def run_mnist(exp_kwargs, train_full_only=True):
 			KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
 			LambdaMemorySetManager(p), #lambda memory set
 			GSSMemorySetManager(p), #GSS memory set
-			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
-			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn', classes_per_task=classes_per_task), #icarl memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn', classes_per_task=classes_per_task), #icarl memory set,
 		]
 
 		# Iterate through all memory managers
@@ -189,12 +189,13 @@ def run_mnist(exp_kwargs, train_full_only=True):
 
 			# Get the name of the memory set manager
 			memory_set_type = memory_set_manager.__class__.__name__
-			method_name = f'{memory_set_type} memory selection'
+			method_name = f'{memory_set_type}'
+			print(f'Selecting using {method_name}')
 
 			# Append iCaRL loss function type to memory set manager name
 			if memory_set_type == 'iCaRL':
 				kwargs['icarl_loss_type'] = memory_set_manager.loss_type
-				method_name = f'{memory_set_type} memory selection ({memory_set_manager.loss_type})'
+				method_name = f'{memory_set_type} ({memory_set_manager.loss_type})'
 
 			# Create memory sets and train M3
 			performances, grad_similarities, models, _ = CL_tasks(
@@ -223,28 +224,29 @@ def run_mnist(exp_kwargs, train_full_only=True):
 				'M3 per task performance': task_performances, 
 				'gradient similarities': grad_similarities
 			}
-		
+
 	return results
 
 def main():
 
 	exp_kwargs = {
-		'p': 0.01,
+		'p': 0.1,
 		'T': 3,
 		'model_training_epoch': 1,
 		'batch_size': 30, 
 		'max_data_size': 500,
-		'model_PATH': './MNIST', 
+		'model_PATH': './cifar10', 
+		'classes_per_task': 10,
 	}
 
 	# Set train_full_only to TRUE first, and run to train and save models M1 and M2
 	# Then set train_full_only to FALSE, and run to compute memory sets and M3
 	train_full_only = False
 
-	results = run_mnist(exp_kwargs, train_full_only=train_full_only)
+	results = run_cifar100(exp_kwargs, train_full_only=train_full_only)
 
 	if not train_full_only:
-		print('MNIST, p={p}, T={T}')
+		print('Cifar, p={p}, T={T}')
 		print(results)
 
 if __name__ == "__main__":
