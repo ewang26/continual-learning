@@ -92,24 +92,47 @@ class CifarNet(nn.Module):
         l2_out_channels,
         l3_out_channels,
         l4_out_channels,
+        l5_out_channels=None,
+        l6_out_channels=None
     ):
         super(type(self), self).__init__()
-        self.conv_block = nn.Sequential(
+
+        layers = [
             nn.Conv2d(in_channels, l1_out_channels, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(l1_out_channels, l2_out_channels, 3),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            #nn.Dropout(p=0.25),
             nn.Conv2d(l2_out_channels, l3_out_channels, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(l3_out_channels, l4_out_channels, 3),
             nn.ReLU(),
-            nn.MaxPool2d(2),
-            #nn.Dropout(p=0.25),
-        )
+            nn.MaxPool2d(2)
+        ]
+        
+        if l5_out_channels is not None:
+            layers.extend([
+                nn.Conv2d(l4_out_channels, l5_out_channels, 3, padding=1),
+                nn.ReLU()
+            ])
+            
+        if l6_out_channels is not None:
+            layers.extend([
+                nn.Conv2d(l5_out_channels, l6_out_channels, 3),
+                nn.ReLU(),
+                nn.MaxPool2d(2)
+            ])
+        
+        self.conv_block = nn.Sequential(*layers)
+        
+        # Calculate the size of the flattened output
+        if l6_out_channels is not None:
+            flat_features = l6_out_channels * 2 * 2
+        else:
+            flat_features = l4_out_channels * 6 * 6
+        
         self.linear_block = nn.Sequential(
-            nn.Linear(l4_out_channels * 6 * 6, 512), nn.ReLU()#, nn.Dropout(p=0.5)
+            nn.Linear(flat_features, 512), nn.ReLU()
         )
         self.out_block = nn.Linear(512, out_channels)
 
