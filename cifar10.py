@@ -22,7 +22,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 	# Define parameters for MNIST dataset
 	channels = 3
 	feature_dim = 2028
-	input_shape = (28, 28)
+	input_shape = (32, 32)
 	input_dim = 16 * 4 * 4
 
 	# Define parameters for task creation
@@ -237,7 +237,7 @@ def main():
 
 	# Set train_full_only to TRUE first, and run to train and save models M1 and M2
 	# Then set train_full_only to FALSE, and run to compute memory sets and M3
-	train_full_only = False
+	train_full_only = True
 
 	results = run_cifar10(exp_kwargs, train_full_only=train_full_only)
 

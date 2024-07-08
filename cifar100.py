@@ -22,13 +22,13 @@ def run_cifar100(exp_kwargs, train_full_only=True):
 	# Define parameters for MNIST dataset
 	channels = 3
 	feature_dim = 2028
-	input_shape = (28, 28)
+	input_shape = (32, 32)
 	input_dim = 16 * 4 * 4
 
 	# Define parameters for task creation
 	max_data_size = 6000
-	classes_per_task = 10 
-	num_tasks = 3
+	classes_per_task = 20 
+	num_tasks = 5
 
 	# Define CIFAR experimental parameters
 	# model_PATH = './cifar10'
@@ -130,6 +130,8 @@ def run_cifar100(exp_kwargs, train_full_only=True):
 			CIFAR100_ARCH["l2_out_channels"],
 			CIFAR100_ARCH["l3_out_channels"],
 			CIFAR100_ARCH["l4_out_channels"],
+			CIFAR100_ARCH["l5_out_channels"],
+			CIFAR100_ARCH["l6_out_channels"],
 		)
 
 	# Define parameters for CL training
