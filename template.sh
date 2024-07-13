@@ -7,5 +7,5 @@
 #SBATCH -o EXPDIR/out_%j.txt # File to which STDOUT will be written
 #SBATCH -e EXPDIR/err_%j.txt # File to which STDERR will be written
 
-python -u run.py EXPDIR EXPNAME KWARGS
+python -u submit_batch.py 
 
