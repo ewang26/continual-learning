@@ -231,7 +231,7 @@ def main():
 		'T': 3,
 		'model_training_epoch': 1,
 		'batch_size': 30, 
-		'max_data_size': 5,
+		'max_data_size': 500,
 		'model_PATH': './cifar10', 
 	}
 
