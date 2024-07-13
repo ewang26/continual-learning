@@ -68,22 +68,22 @@ QUEUE = [
         p=[0.01, 0.05], 
         T=[5],
         learning_rate=[0.01], # consider [0.01, 0.005, 0.001]
-        batch_size=[10], # consider [10, 30, 50, 65]
+        batch_size=[60], # consider [10, 30, 50, 65]
         num_centroids=[2], 
         model_training_epoch=[10], # consider [10, 20, 50]
-        early_stopping_threshold=[1., 5.], # consider [0.1, 0.5, 1., 5., 10.]
+        early_stopping_threshold=[0.1, 5.], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(20),
         class_balanced=[True, False],
         ),
     ),
     ('cifar10', dict(
         p=[0.01, 0.05], 
-        T=[2, 3, 4, 5],
+        T=[5],
         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-        batch_size=[10, 30], # consider [10, 30, 50, 65]
+        batch_size=[60], # consider [10, 30, 50, 65]
         num_centroids=[2, 4, 6], 
         model_training_epoch=[10, 20], # consider [10, 20, 50]
-        early_stopping_threshold=[0.1, 1, 5.], # consider [0.1, 0.5, 1., 5., 10.]
+        early_stopping_threshold=[0.1, 5.], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(20),
         class_balanced=[True, False],
         ),

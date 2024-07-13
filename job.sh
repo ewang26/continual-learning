@@ -2,7 +2,7 @@
 #SBATCH -n 1 # Number of cores
 #SBATCH -N 1 # Ensure that all cores are on one machine
 #SBATCH -t 2-00:00 # Runtime in D-HH:MM
-#SBATCH -p gpu odyssey partition
+#SBATCH -p gpu # odyssey partition
 #SBATCH --mem=1000GB # Memory pool for all cores (see also --mem-per-cpu)
 #SBATCH -o EXPDIR/out_%j.txt # File to which STDOUT will be written
 #SBATCH -e EXPDIR/err_%j.txt # File to which STDERR will be written
@@ -19,7 +19,7 @@ source "${VENV_PATH}/bin/activate"
 
 start_time=$(date +%s)
 
-python -u ${MAIN_PATH}/run.py EXPDIR EXPNAME KWARGS
+python -u ${MAIN_PATH}/submit_batch.py
 
 end_time=$(date +%s)
 runtime=$((end_time - start_time))
