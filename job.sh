@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -n 1 # Number of cores
 #SBATCH -N 1 # Ensure that all cores are on one machine
-#SBATCH -t 0-10:00 # Runtime in D-HH:MM
+#SBATCH -t 1-00:00 # Runtime in D-HH:MM
 #SBATCH -p gpu # odyssey partition
 #SBATCH --gres=gpu:1
 #SBATCH --mem=100GB # Memory pool for all cores (see also --mem-per-cpu)
