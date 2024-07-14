@@ -5,8 +5,8 @@
 #SBATCH -p gpu # GPU partition
 #SBATCH --gres=gpu:1 # Request 1 GPU
 #SBATCH --mem=100GB # Memory pool for all cores (see also --mem-per-cpu)
-#SBATCH -o output_500_new/mnist/out_%j.txt # File to which STDOUT will be written
-#SBATCH -e output_500_new/mnist/err_%j.txt # File to which STDERR will be written
+#SBATCH -o output_500_new/cifar10/out_%j.txt # File to which STDOUT will be written
+#SBATCH -e output_500_new/cifar10/err_%j.txt # File to which STDERR will be written
 
 module load cuda/12.2.0-fasrc01
 module load python/3.10.9-fasrc01
@@ -18,5 +18,5 @@ VENV_PATH="/n/home12/thb489/new_continual_learning/continual-learning/myenv"
 cd ${MAIN_PATH}
 source "${VENV_PATH}/bin/activate"
 
-python -u ${MAIN_PATH}/run.py output_500_new/mnist mnist '{"p": 0.1, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 30, "early_stopping_threshold": 0.1, "random_seed": 19, "class_balanced": true}'
+python -u ${MAIN_PATH}/run.py output_500_new/cifar10 cifar10 '{"p": 0.1, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 30, "early_stopping_threshold": 0.1, "random_seed": 19, "class_balanced": true}'
 
