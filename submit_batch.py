@@ -11,6 +11,7 @@ import itertools
 import json
 import subprocess
 import socket
+import time
 
 from run import (
     run,
@@ -78,7 +79,18 @@ def main():
             submit_job(OUTPUT_DIR, template, experiment_name, exp_kwargs)
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
 
+if __name__ == '__main__':
+    start_time = time.time()
+    print(f"Starting main() at {time.strftime('%H:%M:%S')}")
+    
+    main()
+    
+    end_time = time.time()
+    print(f"Finished main() at {time.strftime('%H:%M:%S')}")
+    
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time:.2f} seconds")
 
