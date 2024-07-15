@@ -74,6 +74,7 @@ QUEUE = [
         early_stopping_threshold=[0.1], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(1),
         class_balanced=[True],
+        max_data_size=[500],
         ),
     )
 ]

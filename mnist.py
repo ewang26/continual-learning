@@ -223,7 +223,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 				'M3 per task performance': task_performances, 
 				'gradient similarities': grad_similarities
 			}
-		
+		r
 	return results
 
 def main():
@@ -233,7 +233,7 @@ def main():
 		'T': 3,
 		'model_training_epoch': 1,
 		'batch_size': 30, 
-		'max_data_size': 500,
+		'max_data_size': 6000,
 		'model_PATH': './MNIST', 
 	}
 
