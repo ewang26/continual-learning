@@ -65,29 +65,17 @@ OUTPUT_DIR = 'output_500_new'
 #for testing purposes
 QUEUE = [
     ('mnist', dict(
-        p=[0.01, 0.02, 0.05, 0.1], 
+        p=[0.01], 
         T=[5],
         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
         batch_size=[50], # consider [10, 30, 50, 65]
         num_centroids=[4], 
         model_training_epoch=[30], # consider [10, 20, 50]
         early_stopping_threshold=[0.1], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=range(20),
+        random_seed=range(1),
         class_balanced=[True],
         ),
-    ),
-    ('cifar10', dict(
-        p=[0.01, 0.02, 0.05, 0.1], 
-        T=[5],
-        learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-        batch_size=[50], # consider [10, 30, 50, 65]
-        num_centroids=[4], 
-        model_training_epoch=[30], # consider [10, 20, 50]
-        early_stopping_threshold=[0.1], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=range(20),
-        class_balanced=[True],
-        ),
-    ),
+    )
 ]
 
 
