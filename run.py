@@ -26,7 +26,7 @@ DRYRUN = True
 # This is the base directory where the results will be stored.
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
-OUTPUT_DIR = 'output_500_test4'
+OUTPUT_DIR = 'experiment_cpu'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
@@ -65,7 +65,7 @@ OUTPUT_DIR = 'output_500_test4'
 #for testing purposes
 QUEUE = [
     ('mnist', dict(
-        p=[0.01], 
+        p=[0.01, 0.02, 0.05, 0.1, 0.2], 
         T=[5],
         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
         batch_size=[50], # consider [10, 30, 50, 65]
