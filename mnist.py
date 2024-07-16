@@ -176,10 +176,10 @@ def run_mnist(exp_kwargs, train_full_only=True):
 
 		# Initialize memory set managers
 		managers = [
+			# GSSMemorySetManager(p), #GSS memory set
 			RandomMemorySetManager(p), #random memory set
 			KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
 			LambdaMemorySetManager(p), #lambda memory set
-			GSSMemorySetManager(p), #GSS memory set
 			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
 			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
 		]
