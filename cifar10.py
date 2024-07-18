@@ -47,6 +47,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 	check_point = 1
 	lr = 0.001
 	early_stopping_threshold = 5.
+	execute_early_stopping = False
 
 	# Seed torch generator
 	random_seed = 1
@@ -68,6 +69,8 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 		model_training_epoch = exp_kwargs['model_training_epoch']
 	if 'early_stopping_threshold' in exp_kwargs.keys():
 		early_stopping_threshold = exp_kwargs['early_stopping_threshold']
+	if 'execute_early_stopping' in exp_kwargs.keys():
+		execute_early_stopping = exp_kwargs['execute_early_stopping']
 	if 'model_PATH' in exp_kwargs.keys():
 		model_PATH = exp_kwargs['model_PATH']
 	if 'class_balanced' in exp_kwargs.keys():
@@ -135,6 +138,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 		'model_training_epoch': model_training_epoch, 
 		'check_point': check_point, 
 		'early_stopping_threshold': early_stopping_threshold, 
+		'execute_early_stopping': execute_early_stopping,
 		'lr': lr,
 		'model_PATH': model_PATH,
 		'class_balanced': class_balanced,
@@ -172,14 +176,17 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 			)
 
 		# Initialize memory set managers
+		# managers = [
+		# 	RandomMemorySetManager(p), #random memory set
+		# 	KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+		# 	LambdaMemorySetManager(p), #lambda memory set
+		# 	GSSMemorySetManager(p), #GSS memory set
+		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
+		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
+		# ]
+
 		managers = [
-			RandomMemorySetManager(p), #random memory set
-			KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
-			LambdaMemorySetManager(p), #lambda memory set
-			GSSMemorySetManager(p), #GSS memory set
-			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
-			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
-		]
+			KMeansMemorySetManager(p, num_centroids, device, max_iter=50)]
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:

@@ -47,6 +47,7 @@ def run_cifar100(exp_kwargs, train_full_only=True):
 	check_point = 1
 	lr = 0.001
 	early_stopping_threshold = 5.
+	execute_early_stopping = False
 
 	# Seed torch generator
 	random_seed = 1
@@ -68,6 +69,8 @@ def run_cifar100(exp_kwargs, train_full_only=True):
 		model_training_epoch = exp_kwargs['model_training_epoch']
 	if 'early_stopping_threshold' in exp_kwargs.keys():
 		early_stopping_threshold = exp_kwargs['early_stopping_threshold']
+	if 'execute_early_stopping' in exp_kwargs.keys():
+		execute_early_stopping = exp_kwargs['execute_early_stopping']
 	if 'model_PATH' in exp_kwargs.keys():
 		model_PATH = exp_kwargs['model_PATH']
 	if 'class_balanced' in exp_kwargs.keys():
@@ -139,6 +142,7 @@ def run_cifar100(exp_kwargs, train_full_only=True):
 		'model_training_epoch': model_training_epoch, 
 		'check_point': check_point, 
 		'early_stopping_threshold': early_stopping_threshold, 
+		'execute_early_stopping': execute_early_stopping,
 		'lr': lr,
 		'model_PATH': model_PATH,
 		'class_balanced': class_balanced,
@@ -243,7 +247,7 @@ def main():
 
 	# Set train_full_only to TRUE first, and run to train and save models M1 and M2
 	# Then set train_full_only to FALSE, and run to compute memory sets and M3
-	train_full_only = False
+	train_full_only = True
 
 	results = run_cifar100(exp_kwargs, train_full_only=train_full_only)
 
