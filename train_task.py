@@ -392,6 +392,7 @@ def train(
 		# Calculate model accuracy for the last pass through the training data
 		train_acc = total_correct / total_samples
 		# Calculate model loss and accuracy on validation data
+
 		val_loss, val_acc = batch_eval(early_stopper['valloader'], model, criterion, weights=weights)
 
 		# Save train, validation callbacks
@@ -405,10 +406,34 @@ def train(
 			print(f'epoch {epoch + 1} train loss: {train_loss:.3f}, val loss: {val_loss:.3f}, train acc: {train_acc:.3f}, val acc: {val_acc:.3f}')
 			print(f'diff {abs(val_loss - prev_val_loss)}')
 		# Early stopping
-		if abs(val_loss - prev_val_loss) <= early_stopper['threshold']:
+		if abs(val_loss - prev_val_loss) <= early_stopper['threshold'] and early_stopper['flag']:
 			break
 		else:
 			prev_val_loss = val_loss
+
+		# Save train, validation callbacks
+		# callbacks['train_loss'].append(train_loss)
+		# callbacks['train_acc'].append(train_acc)
+
+		# if early_stopper['flag']:
+		# 	val_loss, val_acc = batch_eval(early_stopper['valloader'], model, criterion, weights=weights)
+		# 	callbacks['val_loss'].append(val_loss)
+		# 	callbacks['val_acc'].append(val_acc)
+
+		# # Print training stats at checkpoint
+		# if epoch % check_point == 0:    
+		# 	if early_stopper['flag']:
+		# 		print(f'epoch {epoch + 1} train loss: {train_loss:.3f}, val loss: {val_loss:.3f}, train acc: {train_acc:.3f}, val acc: {val_acc:.3f}')
+		# 		print(f'diff: {abs(val_loss - prev_val_loss)}')
+		# 	else:
+		# 		print(f'epoch {epoch + 1} train loss: {train_loss:.3f}, train acc: {train_acc:.3f}')
+
+		# # Early stopping
+		# if early_stopper['flag']:
+		# 	if abs(val_loss - prev_val_loss) <= early_stopper['threshold']: 
+		# 		break
+		# 	else:
+		# 		prev_val_loss = val_loss
 
 	return model, callbacks
 
@@ -421,6 +446,7 @@ def create_dataloaders(
 	memory_sets=None, 
 	memory_weights=None,
 	generator=None,
+	execute_early_stopping=False
 ):
 	'''
 	Create train, validation and test DataLoaders for models M1, M2 and M3
@@ -544,6 +570,7 @@ def train_full_models(
 	momentum=0.9,
 	check_point=2,
 	early_stopping_threshold=0.1,
+	execute_early_stopping=False,
 	val_p=0.1, 
 	batch_size=10, 
 	generator=None,
@@ -554,6 +581,7 @@ def train_full_models(
 		val_p=val_p, 
 		batch_size=batch_size, 
 		generator=generator,
+		execute_early_stopping=execute_early_stopping
 	)
 
 	# Train models M1 on full training data for tasks 1 through T, M2 on full training data for tasks 1 through T-1
@@ -561,7 +589,7 @@ def train_full_models(
 		print(f'Training model {m}')
 
 		# Define early stopping criterion
-		early_stopper = {'valloader': valloaders[m], 'threshold': early_stopping_threshold}
+		early_stopper = {'valloader': valloaders[m], 'threshold': early_stopping_threshold, 'flag': execute_early_stopping}
 
 		# Train model 
 		model, callbacks = train(
@@ -756,6 +784,7 @@ def CL_tasks(
 	classes_per_task = 2
 	check_point = 10
 	early_stopping_threshold = 0.01
+	execute_early_stopping = True
 	optimizer = 'Adam'
 	momentum = 0.9
 
@@ -781,6 +810,8 @@ def CL_tasks(
 		check_point = kwargs['check_point']
 	if 'early_stopping_threshold' in kwargs.keys():
 		early_stopping_threshold = kwargs['early_stopping_threshold']
+	if 'execute_early_stopping' in kwargs.keys():
+		execute_early_stopping = kwargs['execute_early_stopping']
 	if 'optimizer' in kwargs.keys():
 		optimizer = kwargs['optimizer']
 	if 'momentum' in kwargs.keys():
@@ -809,6 +840,7 @@ def CL_tasks(
 			momentum=momentum,
 			check_point=check_point,
 			early_stopping_threshold=early_stopping_threshold,
+			execute_early_stopping=execute_early_stopping,
 			val_p=val_p, 
 			batch_size=batch_size, 
 			generator=generator,
@@ -858,7 +890,7 @@ def CL_tasks(
 		# Train model M3 on memory sets for tasks 1 through T-1 and full training data for task T
 		print(f'Training model M3')
 		m = 'M3'
-		early_stopper = {'valloader': valloaders[m], 'threshold': early_stopping_threshold}
+		early_stopper = {'valloader': valloaders[m], 'threshold': early_stopping_threshold, 'flag': execute_early_stopping}
 		model, callbacks = train(
 			trainloaders[m],
 			data_weights[m], 
