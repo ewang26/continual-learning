@@ -17,5 +17,5 @@ VENV_PATH="/n/home12/thb489/new_continual_learning/continual-learning/myenv"
 cd ${MAIN_PATH}
 source "${VENV_PATH}/bin/activate"
 
-python -u ${MAIN_PATH}/run.py random_initialization_expirement/mnist mnist '{"p": 0.001, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 0, "early_stopping_threshold": 1000000, "random_seed": 0, "class_balanced": true, "max_data_size": 6000}'
+python -u ${MAIN_PATH}/run.py random_initialization_expirement/mnist mnist '{"p": 0.001, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 0, "early_stopping_threshold": 0, "random_seed": 0, "class_balanced": true, "max_data_size": 6000}'
 

@@ -21,12 +21,12 @@ from cifar10 import run_cifar10
 # session. You can use this to either run a sequence of jobs locally
 # on your machine, or to run a sequence of jobs one after another
 # in an interactive shell on odyssey.
-DRYRUN = True
+DRYRUN = False
 
 # This is the base directory where the results will be stored.
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
-OUTPUT_DIR = 'random_initialization_expirement'
+OUTPUT_DIR = 'random_initialization_expirement_cnn'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
@@ -87,7 +87,7 @@ QUEUE = [
         batch_size=[50], # consider [10, 30, 50, 65]
         num_centroids=[4], 
         model_training_epoch=[0], # consider [10, 20, 50]
-        early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
+        early_stopping_threshold=[0], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(5),
         class_balanced=[True],
         max_data_size=[6000],
