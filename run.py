@@ -81,7 +81,7 @@ OUTPUT_DIR = 'random_initialization_expirement'
 
 QUEUE = [
     ('mnist', dict(
-        p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
+        p=[0.001], 
         T=[5],
         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
         batch_size=[50], # consider [10, 30, 50, 65]
