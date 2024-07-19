@@ -63,23 +63,17 @@ class MLP(nn.Module):
     
 
 class MNISTNet(nn.Module):
-    def __init__(self, in_channels=1, out_channels=10):
+    def __init__(self, input_dim=784, out_channels=10):
         super(MNISTNet, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, out_channels)
+        self.fc1 = nn.Linear(input_dim, 100)  
+        self.fc2 = nn.Linear(100, 100)        
+        self.fc3 = nn.Linear(100, out_channels)  
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
+        x = torch.flatten(x, 1)  
+        x = F.relu(self.fc1(x))  
+        x = F.relu(self.fc2(x))  
+        x = self.fc3(x)          
         return x
 
 

@@ -129,11 +129,11 @@ def run_mnist(exp_kwargs, train_full_only=True):
 
 	# Instantiate models
 	torch.manual_seed(random_seed)
-	model_1 = MNISTNet(in_channels=3, out_channels=10)
+	model_1 = MNISTNet()
 	torch.manual_seed(random_seed)
-	model_2 = MNISTNet(in_channels=3, out_channels=10)
+	model_2 = MNISTNet()
 	torch.manual_seed(random_seed)
-	model_3 = MNISTNet(in_channels=3, out_channels=10)
+	model_3 = MNISTNet()
 	models = {'M1': model_1, 'M2': model_2, 'M3': model_3}
 
 	# Define parameters for CL training
