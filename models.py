@@ -63,7 +63,7 @@ class MLP(nn.Module):
     
 
 class MNISTNet(nn.Module):
-    def __init__(self, input_dim=784, out_channels=10):
+    def __init__(self, input_dim=2352, out_channels=10):
         super(MNISTNet, self).__init__()
         self.fc1 = nn.Linear(input_dim, 100)  
         self.fc2 = nn.Linear(100, 100)        
