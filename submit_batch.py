@@ -35,6 +35,7 @@ def safe_zip(*args):
 
 
 def submit_job(output_dir, template, exp_name, exp_kwargs):
+    start_time = time.time()
     exp_dir = os.path.join(output_dir, exp_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
@@ -54,7 +55,12 @@ def submit_job(output_dir, template, exp_name, exp_kwargs):
             print('Error code {} when submitting job for {}'.format(ret, sname))
     else:
         run(exp_dir, exp_name, exp_kwargs)
-    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    hours, rem = divmod(elapsed_time, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("Finished running:exp_name: {}, exp_kwargs: {}".format(exp_name, exp_kwargs))
+    print('Elapsed time: {:0>2}:{:0>2}:{:05.2f}'.format(int(hours), int(minutes), seconds))
 
 def main():
     # Create the directory where your results will go.
