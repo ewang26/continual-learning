@@ -13,14 +13,16 @@ CIFAR10_ARCH = {
     "l4_out_channels": 64,
 }
 # WP: please adjust CIFAR100 architecture
-# TODO CIFAR100 Should use larger network
+# EW: increased depth and channels
 CIFAR100_ARCH = {
     "in_channels": 3,
     "out_channels": 100,
-    "l1_out_channels": 32,
-    "l2_out_channels": 32,
-    "l3_out_channels": 64,
-    "l4_out_channels": 64,
+    "l1_out_channels": 64,
+    "l2_out_channels": 64,
+    "l3_out_channels": 128,
+    "l4_out_channels": 128,
+    "l5_out_channels": 256,
+    "l6_out_channels": 256,
 }
 
 
@@ -61,23 +63,17 @@ class MLP(nn.Module):
     
 
 class MNISTNet(nn.Module):
-    def __init__(self, in_channels=1, out_channels=10):
+    def __init__(self, input_dim=2352, out_channels=10):
         super(MNISTNet, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, out_channels)
+        self.fc1 = nn.Linear(input_dim, 100)  
+        self.fc2 = nn.Linear(100, 100)        
+        self.fc3 = nn.Linear(100, out_channels)  
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
+        x = torch.flatten(x, 1)  
+        x = F.relu(self.fc1(x))  
+        x = F.relu(self.fc2(x))  
+        x = self.fc3(x)          
         return x
 
 
@@ -90,24 +86,47 @@ class CifarNet(nn.Module):
         l2_out_channels,
         l3_out_channels,
         l4_out_channels,
+        l5_out_channels=None,
+        l6_out_channels=None
     ):
         super(type(self), self).__init__()
-        self.conv_block = nn.Sequential(
+
+        layers = [
             nn.Conv2d(in_channels, l1_out_channels, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(l1_out_channels, l2_out_channels, 3),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            #nn.Dropout(p=0.25),
             nn.Conv2d(l2_out_channels, l3_out_channels, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(l3_out_channels, l4_out_channels, 3),
             nn.ReLU(),
-            nn.MaxPool2d(2),
-            #nn.Dropout(p=0.25),
-        )
+            nn.MaxPool2d(2)
+        ]
+        
+        if l5_out_channels is not None:
+            layers.extend([
+                nn.Conv2d(l4_out_channels, l5_out_channels, 3, padding=1),
+                nn.ReLU()
+            ])
+            
+        if l6_out_channels is not None:
+            layers.extend([
+                nn.Conv2d(l5_out_channels, l6_out_channels, 3),
+                nn.ReLU(),
+                nn.MaxPool2d(2)
+            ])
+        
+        self.conv_block = nn.Sequential(*layers)
+        
+        # Calculate the size of the flattened output
+        if l6_out_channels is not None:
+            flat_features = l6_out_channels * 2 * 2
+        else:
+            flat_features = l4_out_channels * 6 * 6
+        
         self.linear_block = nn.Sequential(
-            nn.Linear(l4_out_channels * 6 * 6, 512), nn.ReLU()#, nn.Dropout(p=0.5)
+            nn.Linear(flat_features, 512), nn.ReLU()
         )
         self.out_block = nn.Linear(512, out_channels)
 
