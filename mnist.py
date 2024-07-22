@@ -49,7 +49,8 @@ def run_mnist(exp_kwargs, train_full_only=True):
 	model_training_epoch = 10
 	check_point = 1
 	lr = 0.001
-	early_stopping_threshold = 5.
+	early_stopping_threshold = 10000.
+	execute_early_stopping = False
 
 	# Seed torch generator
 	random_seed = 1
@@ -71,6 +72,8 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		model_training_epoch = exp_kwargs['model_training_epoch']
 	if 'early_stopping_threshold' in exp_kwargs.keys():
 		early_stopping_threshold = exp_kwargs['early_stopping_threshold']
+	if 'execute_early_stopping' in exp_kwargs.keys():
+		execute_early_stopping = exp_kwargs['execute_early_stopping']
 	if 'model_PATH' in exp_kwargs.keys():
 		model_PATH = exp_kwargs['model_PATH']
 	if 'class_balanced' in exp_kwargs.keys():
@@ -126,11 +129,11 @@ def run_mnist(exp_kwargs, train_full_only=True):
 
 	# Instantiate models
 	torch.manual_seed(random_seed)
-	model_1 = MNISTNet(in_channels=3, out_channels=10)
+	model_1 = MNISTNet()
 	torch.manual_seed(random_seed)
-	model_2 = MNISTNet(in_channels=3, out_channels=10)
+	model_2 = MNISTNet()
 	torch.manual_seed(random_seed)
-	model_3 = MNISTNet(in_channels=3, out_channels=10)
+	model_3 = MNISTNet()
 	models = {'M1': model_1, 'M2': model_2, 'M3': model_3}
 
 	# Define parameters for CL training
@@ -138,6 +141,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		'model_training_epoch': model_training_epoch, 
 		'check_point': check_point, 
 		'early_stopping_threshold': early_stopping_threshold, 
+		'execute_early_stopping': execute_early_stopping,
 		'lr': lr,
 		'model_PATH': model_PATH,
 		'class_balanced': class_balanced,
@@ -175,14 +179,17 @@ def run_mnist(exp_kwargs, train_full_only=True):
 			)
 
 		# Initialize memory set managers
+		# managers = [
+		# 	RandomMemorySetManager(p), #random memory set
+		# 	KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+		# 	LambdaMemorySetManager(p), #lambda memory set
+		# 	GSSMemorySetManager(p), #GSS memory set
+		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
+		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
+		# ]
+
 		managers = [
-			# GSSMemorySetManager(p), #GSS memory set
-			RandomMemorySetManager(p), #random memory set
-			# KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
-			# LambdaMemorySetManager(p), #lambda memory set
-			# iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
-			# iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
-		]
+			RandomMemorySetManager(p)]
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:
@@ -223,16 +230,17 @@ def run_mnist(exp_kwargs, train_full_only=True):
 				'M3 per task performance': task_performances, 
 				'gradient similarities': grad_similarities
 			}
+		
 	return results
 
 def main():
 
 	exp_kwargs = {
 		'p': 0.01,
-		'T': 3,
-		'model_training_epoch': 1,
+		'T': 5,
+		'model_training_epoch': 5,
 		'batch_size': 30, 
-		'max_data_size': 6000,
+		'max_data_size': 500,
 		'model_PATH': './MNIST', 
 	}
 
