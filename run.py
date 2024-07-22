@@ -26,7 +26,7 @@ DRYRUN = False
 # This is the base directory where the results will be stored.
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
-OUTPUT_DIR = 'random_initialization_expirement_cnn'
+OUTPUT_DIR = 'random_new_architecture'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
@@ -63,37 +63,37 @@ OUTPUT_DIR = 'random_initialization_expirement_cnn'
 # ]
 
 #MNIST FULL
-# QUEUE = [
-#     ('mnist', dict(
-#         p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
-#         T=[5],
-#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-#         batch_size=[50], # consider [10, 30, 50, 65]
-#         num_centroids=[4], 
-#         model_training_epoch=[30], # consider [10, 20, 50]
-#         early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
-#         random_seed=range(5),
-#         class_balanced=[True],
-#         max_data_size=[6000],
-#         ),
-#     )
-# ]
-
 QUEUE = [
     ('mnist', dict(
-        p=[0.001], 
+        p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
         T=[5],
         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
         batch_size=[50], # consider [10, 30, 50, 65]
         num_centroids=[4], 
-        model_training_epoch=[0], # consider [10, 20, 50]
-        early_stopping_threshold=[0], # consider [0.1, 0.5, 1., 5., 10.]
+        model_training_epoch=[30], # consider [10, 20, 50]
+        early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(5),
         class_balanced=[True],
         max_data_size=[6000],
         ),
     )
 ]
+
+# QUEUE = [
+#     ('mnist', dict(
+#         p=[0.001], 
+#         T=[5],
+#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         batch_size=[50], # consider [10, 30, 50, 65]
+#         num_centroids=[4], 
+#         model_training_epoch=[0], # consider [10, 20, 50]
+#         early_stopping_threshold=[0], # consider [0.1, 0.5, 1., 5., 10.]
+#         random_seed=range(5),
+#         class_balanced=[True],
+#         max_data_size=[6000],
+#         ),
+#     )
+# ]
 
 
 def run(exp_dir, exp_name, exp_kwargs):
