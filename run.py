@@ -23,12 +23,12 @@ import time
 # session. You can use this to either run a sequence of jobs locally
 # on your machine, or to run a sequence of jobs one after another
 # in an interactive shell on odyssey.
-DRYRUN = True
+DRYRUN = False
 
 # This is the base directory where the results will be stored.
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
-OUTPUT_DIR = 'timing_test'
+OUTPUT_DIR = 'mnist_no_early_stopping'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
