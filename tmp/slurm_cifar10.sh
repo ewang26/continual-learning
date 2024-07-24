@@ -18,4 +18,4 @@ VENV_PATH="/n/home12/thb489/new_continual_learning/continual-learning/myenv"
 cd ${MAIN_PATH}
 source "${VENV_PATH}/bin/activate"
 
-python -u ${MAIN_PATH}/run.py test/cifar10 cifar10 '{"p": 0.1, "T": 5, "learning_rate": 0.1, "batch_size": 10, "num_centroids": 4, "model_training_epoch": 1, "early_stopping_threshold": 5.0, "random_seed": 0, "class_balanced": true, "max_data_size": 100, "execute_early_stopping": false}'
+python -u ${MAIN_PATH}/run.py test/cifar10 cifar10 '{"p": 0.001, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 30, "early_stopping_threshold": 100000, "random_seed": 0, "class_balanced": true, "execute_early_stopping": false}'
