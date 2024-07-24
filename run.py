@@ -15,6 +15,8 @@ import pickle
 import numpy as np
 from mnist import run_mnist
 from cifar10 import run_cifar10
+import time
+
 
 # If this flag is set to True, the jobs won't be submitted to odyssey;
 # they will instead be ran one after another in your current terminal
@@ -26,7 +28,7 @@ DRYRUN = True
 # This is the base directory where the results will be stored.
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
-OUTPUT_DIR = 'output'
+OUTPUT_DIR = 'timing_test'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
@@ -35,32 +37,68 @@ OUTPUT_DIR = 'output'
 # be grid-searched over. 
 # Note that the second parameter must be a dictionary in which each
 # value is a list of options.
+# QUEUE = [
+#     ('mnist', dict(
+#         p=[0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
+#         T=[2, 3, 4, 5],
+#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         batch_size=[10], # consider [10, 30, 50, 65]
+#         num_centroids=[2, 4, 6], 
+#         model_training_epoch=[20], # consider [10, 20, 50]
+#         early_stopping_threshold=[1.], # consider [0.1, 0.5, 1., 5., 10.]
+#         random_seed=range(20),
+#         class_balanced=[True, False],
+#         ),
+#     ),
+#     ('cifar10', dict(
+#         p=[0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
+#         T=[2, 3, 4, 5],
+#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         batch_size=[10], # consider [10, 30, 50, 65]
+#         num_centroids=[2, 4, 6], 
+#         model_training_epoch=[20], # consider [10, 20, 50]
+#         early_stopping_threshold=[5.], # consider [0.1, 0.5, 1., 5., 10.]
+#         random_seed=range(20),
+#         class_balanced=[True, False],
+#         ),
+#     ),
+# ]
+
+#FULL MNIST
 QUEUE = [
     ('mnist', dict(
-        p=[0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
-        T=[2, 3, 4, 5],
+        p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
+        T=[5],
         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-        batch_size=[10], # consider [10, 30, 50, 65]
-        num_centroids=[2, 4, 6], 
-        model_training_epoch=[20], # consider [10, 20, 50]
-        early_stopping_threshold=[1.], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=range(20),
-        class_balanced=[True, False],
+        batch_size=[50], # consider [10, 30, 50, 65]
+        num_centroids=[4], 
+        model_training_epoch=[30], # consider [10, 20, 50]
+        early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
+        random_seed=range(5),
+        class_balanced=[True],
+        execute_early_stopping=[False]
         ),
-    ),
-    ('cifar10', dict(
-        p=[0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
-        T=[2, 3, 4, 5],
-        learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-        batch_size=[10], # consider [10, 30, 50, 65]
-        num_centroids=[2, 4, 6], 
-        model_training_epoch=[20], # consider [10, 20, 50]
-        early_stopping_threshold=[5.], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=range(20),
-        class_balanced=[True, False],
-        ),
-    ),
+    )
 ]
+
+#TEST MNIST
+# QUEUE = [
+#     ('mnist', dict(
+#         p=[0.01], 
+#         T=[5],
+#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         batch_size=[50], # consider [10, 30, 50, 65]
+#         num_centroids=[4], 
+#         model_training_epoch=[1], # consider [10, 20, 50]
+#         early_stopping_threshold=[1.], # consider [0.1, 0.5, 1., 5., 10.]
+#         random_seed=range(1),
+#         class_balanced=[True],
+#         execute_early_stopping=[False]
+#         ),
+#     )
+# ]
+
+
 
 
 def run(exp_dir, exp_name, exp_kwargs):
@@ -89,6 +127,8 @@ def run(exp_dir, exp_name, exp_kwargs):
     if os.path.exists(fname):
         print('Experiment previously completed. Skipping!\n')
         return
+    
+    start_time = time.time()
 
     # Parse experiment name and run corresponding script
     if exp_name == 'mnist':
@@ -98,6 +138,14 @@ def run(exp_dir, exp_name, exp_kwargs):
     else:
         raise Exception('Unspecified {}'.foramt(exp_name))
 
+    end_time = time.time()
+    execution_time = end_time - start_time
+    hours = int(execution_time // 3600)
+    minutes = int((execution_time % 3600) // 60)
+    seconds = int(execution_time % 60)
+    formatted_time = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    results['execution_time'] = formatted_time
+    
     # Add experiment parameter dictionary to results dictionary
     results.update(exp_kwargs)
     
