@@ -110,7 +110,7 @@ QUEUE = [
         num_centroids=[4], 
         model_training_epoch=[30], # consider [10, 20, 50]
         early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=range(20),
+        random_seed=range(5),
         class_balanced=[True],
         execute_early_stopping=[False]
         ),
