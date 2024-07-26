@@ -29,6 +29,7 @@ DRYRUN = False
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
 OUTPUT_DIR = 'cifar_first_experiment'
+# OUTPUT_DIR = 'cifar_test'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
@@ -94,13 +95,13 @@ OUTPUT_DIR = 'cifar_first_experiment'
 #         random_seed=range(1),
 #         class_balanced=[True],
 #         max_data_size=[100], 
-#         execute_early_stopping=[False]
+#         execute_early_stopping=[False], 
 #         ),
 #     ),
 # ]
 
 
-# #CIFAR FULL
+# # #CIFAR FULL
 QUEUE = [
     ('cifar10', dict(
         p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
