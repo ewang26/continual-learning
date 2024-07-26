@@ -177,7 +177,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 
 		# Initialize memory set managers
 		managers = [
-			RandomMemorySetManager(p), #random memory set
+			RandomMemorySetManager(p)#, #random memory set
 			# KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
 			# LambdaMemorySetManager(p), #lambda memory set
 			# GSSMemorySetManager(p), #GSS memory set
