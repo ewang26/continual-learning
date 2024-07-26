@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional, Type, Set
 import copy
+import math
 
 import torch
 import torch.nn as nn
@@ -181,12 +182,12 @@ class KMeansMemorySetManager(MemorySetManager):
         # Set the random seed for reproducibility
         self.generator = torch.Generator()
         self.generator.manual_seed(random_seed)
-    
+
     @torch.no_grad()
     def create_memory_set(
         self, x: Float[Tensor, "n f"], y: Float[Tensor, "n 1"]
     ) -> Tuple[Float[Tensor, "m f"], Float[Tensor, "m 1"]]:
-        """Creates memory set using K-Means clustering for each class.
+        """Creates memory set using K-Means clustering for each class in batches.
         Args:
             x: x data.
             y: y data.
@@ -194,101 +195,84 @@ class KMeansMemorySetManager(MemorySetManager):
         Returns:
             (memory_x, memory_y) tuple, where memory_x and memory_y are tensors.
         """
-        memory_x = torch.empty(0)
-        memory_y = torch.empty(0)
-
         if self.p == 1:
             return x, y
 
-        else:
-            device = x.device
-            n = x.shape[0]
-            f_shape = list(x.shape[1:])
-            f = np.prod(f_shape)
-            memory_set_size = int(n * self.p)
-            
-            # Get unique classes
-            classes = torch.unique(y).tolist()
-            num_classes = len(classes)
-            
-            # Calculate the memory size per class
-            mset_size_per_class = memory_set_size // num_classes
+        device = x.device
+        n = x.shape[0]
+        f_shape = list(x.shape[1:])
+        f = np.prod(f_shape)
+        memory_set_size = math.ceil(n * self.p)
+        
+        # Get unique classes
+        classes = torch.unique(y).tolist()
+        num_classes = len(classes)
+        
+        # Calculate the memory size per class
+        mset_size_per_class = memory_set_size // num_classes
 
+        # Initialize dictionaries to store centroids, cluster counters, and memory sets for each class
+        cluster_counters = {label: torch.zeros(self.num_centroids, dtype=torch.float64, device=device) for label in classes}
+        centroids = {label: torch.randn((self.num_centroids, f), dtype=torch.float64, device=device, generator=self.generator) for label in classes}
+        
+        # Initialize memory set related dictionaries
+        memory_x = {label: torch.zeros([mset_size_per_class] + f_shape, dtype=torch.float64, device=device) for label in classes}
+        memory_y = {label: torch.zeros((mset_size_per_class, 1), dtype=torch.long, device=device) for label in classes}
+        memory_distances = {label: torch.full((mset_size_per_class,), float("inf"), device=device) for label in classes}
 
-            # Initialize dictionaries to store centroids, cluster counters, and memory sets for each class
-            cluster_counters = {}
-            centroids = {}
-            
-            # Initialize memory set related dictionaries
-            memory_x = {} #dictionary -- key: class, value: memory set for class
-            memory_y = {} #dictionary -- key: class, value: class labels
-            memory_distances = {} #dictionary -- key: class, value: distance of memory set elements from mean
-            
-            # Iterate over each class: contruct the memory set for each class
+        # Define batch size
+        batch_size = 1000  # You can adjust this value based on your memory constraints
+
+        # Iterate over batches
+        for batch_start in range(0, n, batch_size):
+            batch_end = min(batch_start + batch_size, n)
+            batch_x = x[batch_start:batch_end]
+            batch_y = y[batch_start:batch_end]
+
+            # Iterate over each class in the batch
             for label in classes:
-
-                # Initialize memory set related objects for current class
-                memory_x[label] = torch.zeros([mset_size_per_class] + f_shape, dtype=torch.float64, device=device)
-                memory_y[label] = torch.zeros((mset_size_per_class, 1), dtype=torch.long, device=device)
-                memory_distances[label] = torch.full((mset_size_per_class,), float("inf"), device=device)
-
-                # Get the set of elements labeled with the current class from the data
-                class_mask = (y == label).squeeze()
-                class_x = x[class_mask]
+                # Get the set of elements labeled with the current class from the batch
+                class_mask = (batch_y == label).squeeze()
+                class_x = batch_x[class_mask]
                 class_x = torch.flatten(class_x, 1, -1)
                 
-                # Initialize centroids and cluster counters for the current class
-                centroids[label] = torch.randn((self.num_centroids, f), dtype=torch.float64, device=device, generator=self.generator)
-                cluster_counters[label] = torch.zeros(self.num_centroids, dtype=torch.float64, device=device)
+                if class_x.shape[0] == 0:
+                    continue  # Skip if no samples for this class in the current batch
                 
                 # Do kmeans on elements of the current class
-                # i.e. find the closest centroid for each element, cluster the element 
-                # and update the corresponding centroid
                 for _ in range(self.max_iter):
                     # Find the closest centroid for each element
                     distances = torch.cdist(class_x, centroids[label])
                     closest_centroids = torch.argmin(distances, dim=1)
                     centroid_idx, centroid_addcount = closest_centroids.unique(return_counts=True)
-                    # breakpoint()
+                    
                     for i in range(len(centroid_idx)):
                         idx = centroid_idx[i]
                         # KMEANS update: cluster each element to the closest centroid and update the centroid (cluster mean)
-                        curr_centroid = centroids[label][idx] # current cluster means
-                        curr_cluster_size = cluster_counters[label][idx] # current cluster sizes
-                        curr_cluster_sum = curr_centroid * curr_cluster_size # sum of the elements in current clusters
+                        curr_centroid = centroids[label][idx]
+                        curr_cluster_size = cluster_counters[label][idx]
+                        curr_cluster_sum = curr_centroid * curr_cluster_size
 
-                        cluster_counters[label][idx] += centroid_addcount[i] # increment the cluster size for the closest centroid
+                        cluster_counters[label][idx] += centroid_addcount[i]
                         centroids[label][idx] = (curr_cluster_sum + torch.sum(class_x[closest_centroids == idx], dim=0)) / cluster_counters[label][idx]
-                    
-                # Create memory set from clusters
+                
+                # Update memory set from clusters
                 for i in range(class_x.shape[0]):  
-
-                    # Find the closest centroid for each element
                     element = class_x[i]
-                    distances = LA.norm(centroids[label] - element, dim=1) # get the distance from current element to all centroids
-                    closest_centroid_idx = torch.argmin(distances).item() # find the closest centroid
-                    distance_to_centroid = distances[closest_centroid_idx] # get distance to the closest centroid
-                                   
-                    # Update the memory set for the current class:
-                    # (1) If we haven't filled up the memory set quota for the current class,
-                    # set the i-th element of the memory set for the current class to the current element
-                    if i < mset_size_per_class:
-                        memory_x[label][i] = element.reshape(f_shape)
-                        memory_y[label][i] = label
-                        memory_distances[label][i] = distance_to_centroid
-                    # (2) otherwise, if the distance between the current element and its closest centroid is less than the 
-                    # max radius of an existing cluster, replace the element farthest from its corresponding centroid with 
-                    # the current element
-                    else:
-                        max_idx = torch.argmax(memory_distances[label]) # find the memory set element farthest from its closest centroid
-                        if distance_to_centroid < memory_distances[label][max_idx]:
-                            memory_x[label][max_idx] = element.reshape(f_shape)
-                            memory_distances[label][max_idx] = distance_to_centroid
-            
-            # Concatenate memory sets (just values, without keys) from all classes
-            memory_x = torch.cat(list(memory_x.values()), dim=0)
-            memory_y = torch.cat(list(memory_y.values()), dim=0).view(-1)
-        
+                    distances = LA.norm(centroids[label] - element, dim=1)
+                    closest_centroid_idx = torch.argmin(distances).item()
+                    distance_to_centroid = distances[closest_centroid_idx]
+                    
+                    max_idx = torch.argmax(memory_distances[label])
+                    if distance_to_centroid < memory_distances[label][max_idx]:
+                        memory_x[label][max_idx] = element.reshape(f_shape)
+                        memory_y[label][max_idx] = label
+                        memory_distances[label][max_idx] = distance_to_centroid
+
+        # Concatenate memory sets from all classes
+        memory_x = torch.cat(list(memory_x.values()), dim=0)
+        memory_y = torch.cat(list(memory_y.values()), dim=0).view(-1)
+
         return memory_x, memory_y
 
 # WP: need to verify the mset selection look good on toy
