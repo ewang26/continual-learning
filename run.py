@@ -23,12 +23,12 @@ import time
 # session. You can use this to either run a sequence of jobs locally
 # on your machine, or to run a sequence of jobs one after another
 # in an interactive shell on odyssey.
-DRYRUN = False
+DRYRUN = True
 
 # This is the base directory where the results will be stored.
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
-OUTPUT_DIR = 'mnist_no_early_stopping'
+OUTPUT_DIR = 'test'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
@@ -64,36 +64,58 @@ OUTPUT_DIR = 'mnist_no_early_stopping'
 #     ),
 # ]
 
-#FULL MNIST
+# #FULL MNIST
+# QUEUE = [
+#     ('mnist', dict(
+#         p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
+#         T=[5],
+#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         batch_size=[50], # consider [10, 30, 50, 65]
+#         num_centroids=[4], 
+#         model_training_epoch=[30], # consider [10, 20, 50]
+#         early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
+#         random_seed=range(5),
+#         class_balanced=[True],
+#         execute_early_stopping=[False]
+#         ),
+#     )
+# ]
+
+#TEST MNIST
 QUEUE = [
     ('mnist', dict(
-        p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
+        p=[0.01], 
         T=[5],
         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
         batch_size=[50], # consider [10, 30, 50, 65]
         num_centroids=[4], 
         model_training_epoch=[30], # consider [10, 20, 50]
-        early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=range(5),
+        early_stopping_threshold=[10000000], # consider [0.1, 0.5, 1., 5., 10.]
+        random_seed=range(1),
         class_balanced=[True],
-        execute_early_stopping=[False]
+        execute_early_stopping=[False], 
+        train_full_only=[True],
+        model_PATH=['ideal_models'], 
+        use_memory_sets = [False]
         ),
     )
 ]
 
-#TEST MNIST
 # QUEUE = [
 #     ('mnist', dict(
 #         p=[0.01], 
 #         T=[5],
-#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         learning_rate=[0.1], # consider [0.01, 0.005, 0.001]
 #         batch_size=[50], # consider [10, 30, 50, 65]
 #         num_centroids=[4], 
 #         model_training_epoch=[1], # consider [10, 20, 50]
-#         early_stopping_threshold=[1.], # consider [0.1, 0.5, 1., 5., 10.]
+#         early_stopping_threshold=[1], # consider [0.1, 0.5, 1., 5., 10.]
 #         random_seed=range(1),
 #         class_balanced=[True],
-#         execute_early_stopping=[False]
+#         execute_early_stopping=[True], 
+#         train_full_only=[True],
+#         model_PATH=['ideal_models'], 
+#         use_memory_sets = [False]
 #         ),
 #     )
 # ]
@@ -132,7 +154,7 @@ def run(exp_dir, exp_name, exp_kwargs):
 
     # Parse experiment name and run corresponding script
     if exp_name == 'mnist':
-        results = run_mnist(exp_kwargs, train_full_only=False)
+        results = run_mnist(exp_kwargs, train_full_only=True)
     elif exp_name == 'cifar10':
         results = run_cifar10(exp_kwargs, train_full_only=False)
     else:

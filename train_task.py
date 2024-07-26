@@ -104,6 +104,7 @@ def combine_memory_sets(memory_sets, omit_task=0):
 	return memory_x, memory_y
 
 # Compute gradients of model at a batch of data
+# model here stands for ideal model. X and y are the input and output data of memory set
 def get_gradients(X, y, model, criterion, weights=None):
 	'''
 	Computes the gradients of a model evaluated at a batch of data
