@@ -1,0 +1,400 @@
+Using CUDA
+Running experiment cifar10:
+Results are stored in: official_cifar10_gss/cifar10
+with hyperparameters {'p': 0.005, 'T': 5, 'learning_rate': 0.001, 'batch_size': 50, 'num_centroids': 4, 'model_training_epoch': 30, 'early_stopping_threshold': 1000000, 'random_seed': 0, 'class_balanced': True, 'execute_early_stopping': False, 'exp_name': 'cifar10'}
+
+
+Files already downloaded and verified
+Files already downloaded and verified
+task 0, classes 0, 1
+task 1, classes 2, 3
+task 2, classes 4, 5
+task 3, classes 6, 7
+task 4, classes 8, 9
+Training models M1 and M2
+Training model M1
+epoch 1 train loss: 30713.012, val loss: 2676.907, train acc: 0.466, val acc: 0.596
+diff inf
+epoch 2 train loss: 22528.150, val loss: 2412.382, train acc: 0.617, val acc: 0.625
+diff 264.5242324704677
+epoch 3 train loss: 18693.913, val loss: 2278.215, train acc: 0.685, val acc: 0.662
+diff 134.1673754915396
+epoch 4 train loss: 15537.264, val loss: 2169.698, train acc: 0.741, val acc: 0.679
+diff 108.51686080294712
+epoch 5 train loss: 12343.190, val loss: 2148.485, train acc: 0.792, val acc: 0.702
+diff 21.212937980882543
+epoch 6 train loss: 9221.369, val loss: 2438.361, train acc: 0.843, val acc: 0.699
+diff 289.87550674970043
+epoch 7 train loss: 6730.231, val loss: 2822.671, train acc: 0.888, val acc: 0.694
+diff 384.3105984584108
+epoch 8 train loss: 5035.904, val loss: 3329.624, train acc: 0.919, val acc: 0.690
+diff 506.95280744333377
+epoch 9 train loss: 4093.980, val loss: 3266.229, train acc: 0.935, val acc: 0.682
+diff 63.394880725861185
+epoch 10 train loss: 3453.487, val loss: 4171.358, train acc: 0.943, val acc: 0.670
+diff 905.1282967244092
+epoch 11 train loss: 3371.046, val loss: 4329.521, train acc: 0.946, val acc: 0.679
+diff 158.1636818322222
+epoch 12 train loss: 2785.424, val loss: 4424.425, train acc: 0.957, val acc: 0.682
+diff 94.90360894828973
+epoch 13 train loss: 2855.830, val loss: 5201.774, train acc: 0.956, val acc: 0.687
+diff 777.3491219049065
+epoch 14 train loss: 2586.818, val loss: 5011.238, train acc: 0.963, val acc: 0.669
+diff 190.53605842255547
+epoch 15 train loss: 2791.647, val loss: 5040.503, train acc: 0.960, val acc: 0.677
+diff 29.264773784211684
+epoch 16 train loss: 2315.622, val loss: 5665.479, train acc: 0.967, val acc: 0.672
+diff 624.9768112863676
+epoch 17 train loss: 2483.856, val loss: 5890.470, train acc: 0.964, val acc: 0.674
+diff 224.9906946251067
+epoch 18 train loss: 2361.381, val loss: 6525.743, train acc: 0.966, val acc: 0.670
+diff 635.2723445598222
+epoch 19 train loss: 2274.480, val loss: 6588.123, train acc: 0.969, val acc: 0.672
+diff 62.3807071518022
+epoch 20 train loss: 2177.484, val loss: 6599.499, train acc: 0.970, val acc: 0.670
+diff 11.375984268658613
+epoch 21 train loss: 2387.735, val loss: 6421.875, train acc: 0.969, val acc: 0.663
+diff 177.6238098009071
+epoch 22 train loss: 2457.735, val loss: 6149.869, train acc: 0.969, val acc: 0.684
+diff 272.0066030359212
+epoch 23 train loss: 1877.232, val loss: 6729.547, train acc: 0.974, val acc: 0.667
+diff 579.6779287490072
+epoch 24 train loss: 2147.809, val loss: 6767.093, train acc: 0.971, val acc: 0.678
+diff 37.546378075668144
+epoch 25 train loss: 1927.281, val loss: 7643.856, train acc: 0.974, val acc: 0.663
+diff 876.7629689059595
+epoch 26 train loss: 2133.810, val loss: 7563.351, train acc: 0.973, val acc: 0.675
+diff 80.50508855875978
+epoch 27 train loss: 2014.538, val loss: 7840.324, train acc: 0.973, val acc: 0.669
+diff 276.9732969209563
+epoch 28 train loss: 2111.688, val loss: 7553.448, train acc: 0.974, val acc: 0.666
+diff 286.8765920442711
+epoch 29 train loss: 1859.740, val loss: 8696.158, train acc: 0.977, val acc: 0.659
+diff 1142.7102809328462
+epoch 30 train loss: 1995.533, val loss: 8717.700, train acc: 0.974, val acc: 0.668
+diff 21.541563867618606
+Training model M2
+epoch 1 train loss: 40425.024, val loss: 3676.188, train acc: 0.451, val acc: 0.555
+diff inf
+epoch 2 train loss: 30171.211, val loss: 3257.128, train acc: 0.601, val acc: 0.610
+diff 419.06085314004804
+epoch 3 train loss: 24159.824, val loss: 3014.038, train acc: 0.684, val acc: 0.657
+diff 243.08917280925834
+epoch 4 train loss: 19730.660, val loss: 2765.282, train acc: 0.741, val acc: 0.683
+diff 248.75603967357347
+epoch 5 train loss: 15856.071, val loss: 2820.335, train acc: 0.789, val acc: 0.692
+diff 55.05234517110148
+epoch 6 train loss: 12346.368, val loss: 2999.223, train acc: 0.839, val acc: 0.685
+diff 178.88792761516197
+epoch 7 train loss: 9143.312, val loss: 3301.375, train acc: 0.880, val acc: 0.686
+diff 302.15212639884203
+epoch 8 train loss: 7032.776, val loss: 3985.794, train acc: 0.909, val acc: 0.684
+diff 684.4190552622385
+epoch 9 train loss: 5601.769, val loss: 4802.068, train acc: 0.929, val acc: 0.669
+diff 816.2746503291951
+epoch 10 train loss: 5133.122, val loss: 4929.689, train acc: 0.936, val acc: 0.680
+diff 127.62066399372725
+epoch 11 train loss: 4537.416, val loss: 5310.351, train acc: 0.945, val acc: 0.678
+diff 380.6621673481304
+epoch 12 train loss: 3890.166, val loss: 6033.423, train acc: 0.952, val acc: 0.685
+diff 723.0717199615183
+epoch 13 train loss: 4034.414, val loss: 5941.554, train acc: 0.950, val acc: 0.679
+diff 91.86859305620965
+epoch 14 train loss: 3731.203, val loss: 5708.270, train acc: 0.956, val acc: 0.672
+diff 233.28394813438354
+epoch 15 train loss: 3768.199, val loss: 6719.299, train acc: 0.955, val acc: 0.680
+diff 1011.0285523161283
+epoch 16 train loss: 3341.559, val loss: 6917.599, train acc: 0.960, val acc: 0.680
+diff 198.29975564646702
+epoch 17 train loss: 3439.191, val loss: 7102.716, train acc: 0.961, val acc: 0.668
+diff 185.1172841487287
+epoch 18 train loss: 3211.859, val loss: 6569.893, train acc: 0.963, val acc: 0.673
+diff 532.8232687374511
+epoch 19 train loss: 3091.383, val loss: 8683.196, train acc: 0.966, val acc: 0.650
+diff 2113.303607506118
+epoch 20 train loss: 3303.087, val loss: 7430.649, train acc: 0.965, val acc: 0.669
+diff 1252.5470912308701
+epoch 21 train loss: 2905.519, val loss: 8072.576, train acc: 0.968, val acc: 0.672
+diff 641.9269227486884
+epoch 22 train loss: 2856.367, val loss: 8312.214, train acc: 0.969, val acc: 0.686
+diff 239.6376828924267
+epoch 23 train loss: 3228.614, val loss: 8226.684, train acc: 0.967, val acc: 0.657
+diff 85.53022655115092
+epoch 24 train loss: 2896.880, val loss: 9312.608, train acc: 0.968, val acc: 0.658
+diff 1085.9246392152436
+epoch 25 train loss: 3135.419, val loss: 9337.943, train acc: 0.967, val acc: 0.657
+diff 25.335158107980533
+epoch 26 train loss: 3002.056, val loss: 8630.630, train acc: 0.969, val acc: 0.660
+diff 707.3131781244429
+epoch 27 train loss: 2805.294, val loss: 9599.100, train acc: 0.973, val acc: 0.667
+diff 968.4699550492842
+epoch 28 train loss: 3287.421, val loss: 10170.486, train acc: 0.969, val acc: 0.667
+diff 571.3860334423971
+epoch 29 train loss: 2976.355, val loss: 10855.164, train acc: 0.971, val acc: 0.668
+diff 684.6773113184863
+epoch 30 train loss: 2848.728, val loss: 9665.503, train acc: 0.972, val acc: 0.667
+diff 1189.66040908369
+Selecting using RandomMemorySetManager
+RandomMemorySetManager
+Start time: 2024-08-04 12:50:25
+Training model M3
+epoch 1 train loss: 3234.900, val loss: 10179.268, train acc: 0.778, val acc: 0.176
+diff inf
+epoch 2 train loss: 2122.632, val loss: 9494.676, train acc: 0.874, val acc: 0.179
+diff 684.5923815180722
+epoch 3 train loss: 1827.559, val loss: 11628.585, train acc: 0.897, val acc: 0.183
+diff 2133.908621868528
+epoch 4 train loss: 1512.713, val loss: 13803.692, train acc: 0.914, val acc: 0.176
+diff 2175.1071855980554
+epoch 5 train loss: 1301.040, val loss: 12860.375, train acc: 0.925, val acc: 0.193
+diff 943.3171498593038
+epoch 6 train loss: 1060.869, val loss: 12432.365, train acc: 0.936, val acc: 0.209
+diff 428.01005021733
+epoch 7 train loss: 815.961, val loss: 13555.738, train acc: 0.948, val acc: 0.224
+diff 1123.3737896520834
+epoch 8 train loss: 516.385, val loss: 21334.012, train acc: 0.967, val acc: 0.224
+diff 7778.273818236397
+epoch 9 train loss: 443.733, val loss: 19657.609, train acc: 0.970, val acc: 0.231
+diff 1676.402730922855
+epoch 10 train loss: 393.624, val loss: 21088.591, train acc: 0.976, val acc: 0.225
+diff 1430.981121853849
+epoch 11 train loss: 251.561, val loss: 38664.258, train acc: 0.984, val acc: 0.204
+diff 17575.6671100468
+epoch 12 train loss: 236.681, val loss: 28612.460, train acc: 0.987, val acc: 0.215
+diff 10051.797921844453
+epoch 13 train loss: 290.390, val loss: 26930.453, train acc: 0.984, val acc: 0.219
+diff 1682.0064713077008
+epoch 14 train loss: 73.478, val loss: 33700.963, train acc: 0.995, val acc: 0.226
+diff 6770.509214941703
+epoch 15 train loss: 221.248, val loss: 31781.515, train acc: 0.987, val acc: 0.229
+diff 1919.4478372792146
+epoch 16 train loss: 155.193, val loss: 32536.134, train acc: 0.990, val acc: 0.211
+diff 754.6194262332356
+epoch 17 train loss: 283.529, val loss: 34868.880, train acc: 0.984, val acc: 0.211
+diff 2332.7457331662445
+epoch 18 train loss: 59.953, val loss: 34400.180, train acc: 0.997, val acc: 0.213
+diff 468.6999548703898
+epoch 19 train loss: 83.423, val loss: 42262.409, train acc: 0.995, val acc: 0.216
+diff 7862.229369587483
+epoch 20 train loss: 184.176, val loss: 30609.873, train acc: 0.989, val acc: 0.212
+diff 11652.536403485843
+epoch 21 train loss: 188.782, val loss: 33721.084, train acc: 0.988, val acc: 0.232
+diff 3111.2110280940906
+epoch 22 train loss: 153.023, val loss: 38513.340, train acc: 0.991, val acc: 0.220
+diff 4792.255671890205
+epoch 23 train loss: 96.456, val loss: 46914.443, train acc: 0.995, val acc: 0.210
+diff 8401.10362731346
+epoch 24 train loss: 168.322, val loss: 40631.104, train acc: 0.991, val acc: 0.222
+diff 6283.339291730903
+epoch 25 train loss: 177.109, val loss: 51300.194, train acc: 0.993, val acc: 0.203
+diff 10669.089814203464
+epoch 26 train loss: 153.421, val loss: 43437.428, train acc: 0.992, val acc: 0.224
+diff 7862.766001892844
+epoch 27 train loss: 131.430, val loss: 51606.667, train acc: 0.993, val acc: 0.212
+diff 8169.239203142875
+epoch 28 train loss: 84.005, val loss: 45514.339, train acc: 0.996, val acc: 0.214
+diff 6092.3279259895935
+epoch 29 train loss: 212.032, val loss: 41762.259, train acc: 0.989, val acc: 0.212
+diff 3752.0796151611867
+epoch 30 train loss: 41.346, val loss: 51151.261, train acc: 0.997, val acc: 0.208
+diff 9389.001656888046
+End time: 2024-08-04 13:20:04
+Time to complete: 00:29:39.02
+Selecting using KMeansMemorySetManager
+KMeansMemorySetManager
+Start time: 2024-08-04 13:20:04
+Training model M3
+epoch 1 train loss: 796.963, val loss: 22118.734, train acc: 0.972, val acc: 0.237
+diff inf
+epoch 2 train loss: 292.080, val loss: 35189.635, train acc: 0.982, val acc: 0.224
+diff 13070.900634264428
+epoch 3 train loss: 170.380, val loss: 46966.221, train acc: 0.991, val acc: 0.223
+diff 11776.585814613769
+epoch 4 train loss: 39.100, val loss: 51523.340, train acc: 0.998, val acc: 0.240
+diff 4557.119403449375
+epoch 5 train loss: 1.756, val loss: 57385.877, train acc: 1.000, val acc: 0.236
+diff 5862.5372873233355
+epoch 6 train loss: 0.603, val loss: 61513.090, train acc: 1.000, val acc: 0.234
+diff 4127.212144561141
+epoch 7 train loss: 0.288, val loss: 62425.412, train acc: 1.000, val acc: 0.237
+diff 912.3228651928002
+epoch 8 train loss: 0.156, val loss: 69511.903, train acc: 1.000, val acc: 0.238
+diff 7086.491104385197
+epoch 9 train loss: 0.081, val loss: 72114.675, train acc: 1.000, val acc: 0.237
+diff 2602.7713996910607
+epoch 10 train loss: 0.044, val loss: 76343.423, train acc: 1.000, val acc: 0.236
+diff 4228.7478121334425
+epoch 11 train loss: 0.024, val loss: 79550.031, train acc: 1.000, val acc: 0.236
+diff 3206.6085332914226
+epoch 12 train loss: 0.015, val loss: 82894.130, train acc: 1.000, val acc: 0.235
+diff 3344.099200830882
+epoch 13 train loss: 0.009, val loss: 84175.562, train acc: 1.000, val acc: 0.236
+diff 1281.4311802812445
+epoch 14 train loss: 0.006, val loss: 89264.055, train acc: 1.000, val acc: 0.232
+diff 5088.49300715237
+epoch 15 train loss: 0.004, val loss: 88210.387, train acc: 1.000, val acc: 0.236
+diff 1053.667372753349
+epoch 16 train loss: 0.003, val loss: 91161.408, train acc: 1.000, val acc: 0.236
+diff 2951.0210973156645
+epoch 17 train loss: 0.002, val loss: 94280.817, train acc: 1.000, val acc: 0.235
+diff 3119.4086739519553
+epoch 18 train loss: 0.001, val loss: 95437.016, train acc: 1.000, val acc: 0.235
+diff 1156.199050598152
+epoch 19 train loss: 0.001, val loss: 97480.032, train acc: 1.000, val acc: 0.235
+diff 2043.0160631192848
+epoch 20 train loss: 0.001, val loss: 97118.414, train acc: 1.000, val acc: 0.237
+diff 361.61820790600905
+epoch 21 train loss: 0.000, val loss: 99525.059, train acc: 1.000, val acc: 0.236
+diff 2406.6448873536283
+epoch 22 train loss: 0.000, val loss: 99932.568, train acc: 1.000, val acc: 0.236
+diff 407.50944507683744
+epoch 23 train loss: 0.000, val loss: 102311.548, train acc: 1.000, val acc: 0.236
+diff 2378.980108997217
+epoch 24 train loss: 0.000, val loss: 105121.036, train acc: 1.000, val acc: 0.235
+diff 2809.4881147458946
+epoch 25 train loss: 0.000, val loss: 103939.250, train acc: 1.000, val acc: 0.235
+diff 1181.7859949807025
+epoch 26 train loss: 0.000, val loss: 105106.006, train acc: 1.000, val acc: 0.237
+diff 1166.75544814131
+epoch 27 train loss: 0.000, val loss: 108824.798, train acc: 1.000, val acc: 0.235
+diff 3718.792386352885
+epoch 28 train loss: 0.000, val loss: 107800.416, train acc: 1.000, val acc: 0.236
+diff 1024.382563666586
+epoch 29 train loss: 0.000, val loss: 110118.490, train acc: 1.000, val acc: 0.236
+diff 2318.0742081223725
+epoch 30 train loss: 0.000, val loss: 111250.735, train acc: 1.000, val acc: 0.235
+diff 1132.2448266654392
+End time: 2024-08-04 13:49:11
+Time to complete: 00:29:07.38
+Selecting using LambdaMemorySetManager
+LambdaMemorySetManager
+Start time: 2024-08-04 13:49:11
+Training model M3
+epoch 1 train loss: 1648.981, val loss: 11510.568, train acc: 0.966, val acc: 0.271
+diff inf
+epoch 2 train loss: 346.377, val loss: 15198.368, train acc: 0.983, val acc: 0.281
+diff 3687.8000850762564
+epoch 3 train loss: 71.297, val loss: 19027.212, train acc: 0.997, val acc: 0.298
+diff 3828.8440073846195
+epoch 4 train loss: 7.285, val loss: 24079.691, train acc: 1.000, val acc: 0.282
+diff 5052.479007826063
+epoch 5 train loss: 1.333, val loss: 26446.641, train acc: 1.000, val acc: 0.284
+diff 2366.9501512912684
+epoch 6 train loss: 0.498, val loss: 30211.157, train acc: 1.000, val acc: 0.284
+diff 3764.5164114488507
+epoch 7 train loss: 0.269, val loss: 30344.382, train acc: 1.000, val acc: 0.285
+diff 133.22522906135418
+epoch 8 train loss: 0.146, val loss: 34181.390, train acc: 1.000, val acc: 0.285
+diff 3837.0071659609675
+epoch 9 train loss: 0.097, val loss: 34940.201, train acc: 1.000, val acc: 0.286
+diff 758.8114940014129
+epoch 10 train loss: 0.061, val loss: 34780.198, train acc: 1.000, val acc: 0.287
+diff 160.00306051418738
+epoch 11 train loss: 0.038, val loss: 39106.493, train acc: 1.000, val acc: 0.284
+diff 4326.295071369488
+epoch 12 train loss: 0.027, val loss: 37088.043, train acc: 1.000, val acc: 0.287
+diff 2018.4499144866859
+epoch 13 train loss: 0.018, val loss: 38421.188, train acc: 1.000, val acc: 0.288
+diff 1333.1448734335718
+epoch 14 train loss: 0.012, val loss: 40595.730, train acc: 1.000, val acc: 0.286
+diff 2174.542080721294
+epoch 15 train loss: 0.011, val loss: 42007.679, train acc: 1.000, val acc: 0.286
+diff 1411.9492611387977
+epoch 16 train loss: 0.006, val loss: 41325.888, train acc: 1.000, val acc: 0.289
+diff 681.7916387604855
+epoch 17 train loss: 0.004, val loss: 44699.394, train acc: 1.000, val acc: 0.285
+diff 3373.505722613998
+epoch 18 train loss: 0.003, val loss: 46519.013, train acc: 1.000, val acc: 0.285
+diff 1819.6196785026623
+epoch 19 train loss: 0.002, val loss: 45986.137, train acc: 1.000, val acc: 0.286
+diff 532.875828917975
+epoch 20 train loss: 0.001, val loss: 46182.259, train acc: 1.000, val acc: 0.288
+diff 196.12198024228564
+epoch 21 train loss: 0.001, val loss: 47214.918, train acc: 1.000, val acc: 0.289
+diff 1032.6582405499503
+epoch 22 train loss: 0.001, val loss: 47178.668, train acc: 1.000, val acc: 0.290
+diff 36.24965814647294
+epoch 23 train loss: 0.000, val loss: 50235.096, train acc: 1.000, val acc: 0.288
+diff 3056.4277474862465
+epoch 24 train loss: 0.000, val loss: 51706.810, train acc: 1.000, val acc: 0.287
+diff 1471.7142041956322
+epoch 25 train loss: 0.000, val loss: 51222.114, train acc: 1.000, val acc: 0.288
+diff 484.6960234447324
+epoch 26 train loss: 0.000, val loss: 55575.962, train acc: 1.000, val acc: 0.284
+diff 4353.848543832697
+epoch 27 train loss: 0.000, val loss: 53177.755, train acc: 1.000, val acc: 0.288
+diff 2398.2071895085246
+epoch 28 train loss: 0.000, val loss: 51317.627, train acc: 1.000, val acc: 0.290
+diff 1860.1280110485677
+epoch 29 train loss: 0.000, val loss: 55244.917, train acc: 1.000, val acc: 0.286
+diff 3927.2899091250147
+epoch 30 train loss: 0.000, val loss: 56374.149, train acc: 1.000, val acc: 0.284
+diff 1129.231974380069
+End time: 2024-08-04 14:18:32
+Time to complete: 00:29:20.65
+Selecting using iCaRL
+iCaRL (icarl)
+Start time: 2024-08-04 14:18:32
+training representation using icarl loss
+training representation using icarl loss
+training representation using icarl loss
+training representation using icarl loss
+Training model M3
+epoch 1 train loss: 963.954, val loss: 11247.109, train acc: 0.972, val acc: 0.308
+diff inf
+epoch 2 train loss: 354.483, val loss: 18046.478, train acc: 0.982, val acc: 0.280
+diff 6799.368382555351
+epoch 3 train loss: 124.909, val loss: 19155.927, train acc: 0.993, val acc: 0.300
+diff 1109.4492346760453
+epoch 4 train loss: 241.139, val loss: 26166.923, train acc: 0.986, val acc: 0.289
+diff 7010.996133714627
+epoch 5 train loss: 270.314, val loss: 20566.466, train acc: 0.988, val acc: 0.279
+diff 5600.456996552104
+epoch 6 train loss: 49.545, val loss: 21648.514, train acc: 0.997, val acc: 0.301
+diff 1082.0477715102425
+epoch 7 train loss: 5.314, val loss: 30016.351, train acc: 1.000, val acc: 0.282
+diff 8367.837569895444
+epoch 8 train loss: 0.402, val loss: 30585.072, train acc: 1.000, val acc: 0.283
+diff 568.7211823367361
+epoch 9 train loss: 0.198, val loss: 31156.440, train acc: 1.000, val acc: 0.283
+diff 571.3672796926876
+epoch 10 train loss: 0.143, val loss: 31754.552, train acc: 1.000, val acc: 0.282
+diff 598.112168171785
+epoch 11 train loss: 0.105, val loss: 32381.339, train acc: 1.000, val acc: 0.282
+diff 626.7872921398812
+epoch 12 train loss: 0.078, val loss: 33118.325, train acc: 1.000, val acc: 0.283
+diff 736.9858483985663
+epoch 13 train loss: 0.057, val loss: 33804.692, train acc: 1.000, val acc: 0.284
+diff 686.367412506348
+epoch 14 train loss: 0.042, val loss: 34471.690, train acc: 1.000, val acc: 0.285
+diff 666.9976467325687
+epoch 15 train loss: 0.031, val loss: 35197.602, train acc: 1.000, val acc: 0.286
+diff 725.9123114643808
+epoch 16 train loss: 0.023, val loss: 35781.832, train acc: 1.000, val acc: 0.286
+diff 584.229801807327
+epoch 17 train loss: 0.017, val loss: 36581.804, train acc: 1.000, val acc: 0.285
+diff 799.971250553288
+epoch 18 train loss: 0.013, val loss: 37288.493, train acc: 1.000, val acc: 0.285
+diff 706.6898799849732
+epoch 19 train loss: 0.009, val loss: 37959.830, train acc: 1.000, val acc: 0.285
+diff 671.3370282917167
+epoch 20 train loss: 0.007, val loss: 38634.012, train acc: 1.000, val acc: 0.285
+diff 674.1814763706498
+epoch 21 train loss: 0.005, val loss: 39459.525, train acc: 1.000, val acc: 0.287
+diff 825.5131443712817
+epoch 22 train loss: 0.004, val loss: 40097.925, train acc: 1.000, val acc: 0.287
+diff 638.3996102703604
+epoch 23 train loss: 0.003, val loss: 40880.992, train acc: 1.000, val acc: 0.287
+diff 783.0669419912592
+epoch 24 train loss: 0.002, val loss: 41639.509, train acc: 1.000, val acc: 0.287
+diff 758.5170607533291
+epoch 25 train loss: 0.001, val loss: 42485.319, train acc: 1.000, val acc: 0.285
+diff 845.809906345472
+epoch 26 train loss: 0.001, val loss: 43173.813, train acc: 1.000, val acc: 0.286
+diff 688.4944453890275
+epoch 27 train loss: 0.001, val loss: 43972.339, train acc: 1.000, val acc: 0.285
+diff 798.5264713530269
+epoch 28 train loss: 0.001, val loss: 44635.350, train acc: 1.000, val acc: 0.286
+diff 663.010421243227
+epoch 29 train loss: 0.000, val loss: 45439.738, train acc: 1.000, val acc: 0.285
+diff 804.388255549391
