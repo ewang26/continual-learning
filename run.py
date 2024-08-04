@@ -84,7 +84,7 @@ OUTPUT_DIR = '4_aug_test'
 #TEST MNIST
 QUEUE = [
     ('mnist', dict(
-        p=[0.2], 
+        p=[1], 
         T=[5],
         learning_rate=[0.1], # consider [0.01, 0.005, 0.001]
         batch_size=[10], # consider [10, 30, 50, 65]
@@ -93,7 +93,7 @@ QUEUE = [
         early_stopping_threshold=[1.], # consider [0.1, 0.5, 1., 5., 10.]
         random_seed=range(1),
         class_balanced=[True],
-        max_data_size=[10]
+        max_data_size=[1]
         ),
     )
 ]

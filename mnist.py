@@ -196,6 +196,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		for memory_set_manager in managers:
 
 			# Get the name of the memory set manager
+			print(memory_set_manager)
 			memory_set_type = memory_set_manager.__class__.__name__
 			method_name = f'{memory_set_type} memory selection'
 
