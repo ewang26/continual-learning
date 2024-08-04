@@ -18,6 +18,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
 torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
 
+
 def run_cifar10(exp_kwargs, train_full_only=True):
 	# Define parameters for MNIST dataset
 	channels = 3
@@ -133,6 +134,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 			CIFAR10_ARCH["l4_out_channels"],
 		)
 
+	print("exp_kwargs in run_cifar10 before redefinition (?)", exp_kwargs)
 	# Define parameters for CL training
 	kwargs = {
 		'model_training_epoch': model_training_epoch, 
@@ -175,11 +177,13 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 			**kwargs,
 			)
 
+		print("printing kwargs from cifar after redefinition (?)")
+		print(kwargs)
 		# Initialize memory set managers
 		managers = [
-			RandomMemorySetManager(p)#, #random memory set
-			# KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
-			# LambdaMemorySetManager(p), #lambda memory set
+			RandomMemorySetManager(p)#,, #random memory set
+			#KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+			#LambdaMemorySetManager(p) #lambda memory set
 			# GSSMemorySetManager(p), #GSS memory set
 			# iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
 			# iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
@@ -188,6 +192,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:
+			print(memory_set_manager)
 
 			# Get the name of the memory set manager
 			memory_set_type = memory_set_manager.__class__.__name__

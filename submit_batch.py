@@ -34,6 +34,7 @@ def safe_zip(*args):
 
 
 def submit_job(output_dir, template, exp_name, exp_kwargs):
+
     exp_dir = os.path.join(output_dir, exp_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
@@ -75,6 +76,12 @@ def main():
     for experiment_name, params in QUEUE:
         for vals in itertools.product(*list(params.values())):
             exp_kwargs = dict(safe_zip(params.keys(), vals))
+            print("new experiment starting with parameters")
+            # print(template)
+            print("exp name:")
+            print(experiment_name)
+            print("exp_kwargs:")
+            print(exp_kwargs)
             submit_job(OUTPUT_DIR, template, experiment_name, exp_kwargs)
 
 
