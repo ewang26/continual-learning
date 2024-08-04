@@ -1,0 +1,31 @@
+Using CUDA
+Running experiment cifar10:
+Results are stored in: cifar_test_aug_4/cifar10
+with hyperparameters {'p': 0.1, 'T': 5, 'learning_rate': 0.1, 'batch_size': 10, 'num_centroids': 4, 'model_training_epoch': 1, 'early_stopping_threshold': 5.0, 'random_seed': 0, 'class_balanced': True, 'max_data_size': 10, 'execute_early_stopping': False, 'exp_name': 'cifar10'}
+
+
+exp_kwargs from run.py {'p': 0.1, 'T': 5, 'learning_rate': 0.1, 'batch_size': 10, 'num_centroids': 4, 'model_training_epoch': 1, 'early_stopping_threshold': 5.0, 'random_seed': 0, 'class_balanced': True, 'max_data_size': 10, 'execute_early_stopping': False, 'exp_name': 'cifar10'}
+Files already downloaded and verified
+Files already downloaded and verified
+task 0, classes 0, 1
+task 1, classes 2, 3
+task 2, classes 4, 5
+task 3, classes 6, 7
+task 4, classes 8, 9
+exp_kwargs in run_cifar10 before redefinition (?) {'p': 0.1, 'T': 5, 'learning_rate': 0.1, 'batch_size': 10, 'num_centroids': 4, 'model_training_epoch': 1, 'early_stopping_threshold': 5.0, 'random_seed': 0, 'class_balanced': True, 'max_data_size': 10, 'execute_early_stopping': False, 'exp_name': 'cifar10'}
+Training models M1 and M2
+Training model M1
+epoch 1 train loss: 3666856.689, val loss: 792.882, train acc: 0.000, val acc: 0.000
+diff inf
+Training model M2
+epoch 1 train loss: 1449913.592, val loss: 73.331, train acc: 0.111, val acc: 0.200
+diff inf
+printing kwargs from cifar after redefinition (?)
+{'model_training_epoch': 1, 'check_point': 1, 'early_stopping_threshold': 5.0, 'execute_early_stopping': False, 'lr': 0.1, 'model_PATH': None, 'class_balanced': True}
+<data.RandomMemorySetManager object at 0x1531e6354280>
+Selecting using RandomMemorySetManager
+Training model M3
+epoch 1 train loss: 20.666, val loss: 5416677.929, train acc: 0.000, val acc: 0.200
+diff inf
+<data.KMeansMemorySetManager object at 0x15312cc8b190>
+Selecting using KMeansMemorySetManager

@@ -1,0 +1,23 @@
+/n/home12/thb489/new_continual_learning/continual-learning/myenv/lib/python3.10/site-packages/torch/utils/data/dataloader.py:557: UserWarning: This DataLoader will create 2 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
+  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:03<00:00,  3.51s/it]100%|██████████| 1/1 [00:03<00:00,  3.51s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:03<00:00,  3.47s/it]100%|██████████| 1/1 [00:03<00:00,  3.47s/it]
+  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:03<00:00,  3.23s/it]100%|██████████| 1/1 [00:03<00:00,  3.23s/it]
+Traceback (most recent call last):
+  File "/n/home12/thb489/new_continual_learning/continual-learning/run.py", line 200, in <module>
+    main()
+  File "/n/home12/thb489/new_continual_learning/continual-learning/run.py", line 196, in main
+    run(exp_dir, exp_name, exp_kwargs)
+  File "/n/home12/thb489/new_continual_learning/continual-learning/run.py", line 157, in run
+    results = run_cifar10(exp_kwargs, train_full_only=False)
+  File "/n/home12/thb489/new_continual_learning/continual-learning/cifar10.py", line 208, in run_cifar10
+    performances, grad_similarities, models, _ = CL_tasks(
+  File "/n/home12/thb489/new_continual_learning/continual-learning/train_task.py", line 861, in CL_tasks
+    memory_sets, memory_weights = compute_memory_sets(
+  File "/n/home12/thb489/new_continual_learning/continual-learning/train_task.py", line 660, in compute_memory_sets
+    memory_x, memory_y = memory_set_manager.create_memory_set(X, scaled_y)
+  File "/n/home12/thb489/new_continual_learning/continual-learning/myenv/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+  File "/n/home12/thb489/new_continual_learning/continual-learning/data.py", line 283, in create_memory_set
+    max_idx = torch.argmax(memory_distances[label]) # find the memory set element farthest from its closest centroid
+IndexError: argmax(): Expected reduction dim to be specified for input.numel() == 0.
