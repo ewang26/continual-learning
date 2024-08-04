@@ -29,8 +29,8 @@ DRYRUN = False
 # On Odyssey, you may not want this to be your home directory
 # If you're storing lots of files (or storing a lot of data).
 # OUTPUT_DIR = 'cifar_test'
-OUTPUT_DIR = 'official_cifar10'
-# OUTPUT_DIR = 'official_cifar10_gss'
+#OUTPUT_DIR = 'official_cifar10'
+OUTPUT_DIR = 'official_cifar10_gss'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
