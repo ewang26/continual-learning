@@ -17,6 +17,8 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.autograd import Variable
 torch.set_default_dtype(torch.float64) #change this to float32 if on GPU
+import time
+from datetime import datetime
 
 def run_cifar10(exp_kwargs, train_full_only=True):
 	# Define parameters for MNIST dataset
@@ -176,17 +178,16 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 			)
 
 		# Initialize memory set managers
-		# managers = [
-		# 	RandomMemorySetManager(p), #random memory set
-		# 	KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
-		# 	LambdaMemorySetManager(p), #lambda memory set
-		# 	GSSMemorySetManager(p), #GSS memory set
-		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
-		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
-		# ]
-
 		managers = [
-			KMeansMemorySetManager(p, num_centroids, device, max_iter=50)]
+			RandomMemorySetManager(p), #random memory set
+			KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+			LambdaMemorySetManager(p), #lambda memory set
+			# GSSMemorySetManager(p), #GSS memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn'), #icarl memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn'), #icarl memory set,
+		]
+
+		#managers = [GSSMemorySetManager(p)]
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:
@@ -200,6 +201,11 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 			if memory_set_type == 'iCaRL':
 				kwargs['icarl_loss_type'] = memory_set_manager.loss_type
 				method_name = f'{memory_set_type} ({memory_set_manager.loss_type})'
+			
+			print(method_name)
+			start_time = time.time()
+			start_datetime = datetime.fromtimestamp(start_time)
+			print("Start time:", start_datetime.strftime("%Y-%m-%d %H:%M:%S"))
 
 			# Create memory sets and train M3
 			performances, grad_similarities, models, _ = CL_tasks(
@@ -222,11 +228,24 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 				generator=generator,
 			)
 
-			# Append performances and gradient similarities to restuls
+			end_time = time.time()  
+			end_datetime = datetime.fromtimestamp(end_time)
+			print("End time:", end_datetime.strftime("%Y-%m-%d %H:%M:%S"))
+			execution_time = end_time - start_time
+
+			hours, rem = divmod(execution_time, 3600)
+			minutes, seconds = divmod(rem, 60)
+			formatted_time = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
+			print("Time to complete:", formatted_time)
+
+			# Append performances, gradient similarities, and timing information to results
 			results[method_name] = {
 				'model performances': performances, 
 				'M3 per task performance': task_performances, 
-				'gradient similarities': grad_similarities
+				'gradient similarities': grad_similarities,
+				'execution_time': formatted_time,
+				'start_time': start_datetime,
+				'end_time': end_datetime
 			}
 
 	return results
