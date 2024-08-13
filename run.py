@@ -30,7 +30,7 @@ DRYRUN = False
 # If you're storing lots of files (or storing a lot of data).
 # OUTPUT_DIR = 'cifar_test'
 #OUTPUT_DIR = 'official_cifar10'
-OUTPUT_DIR = 'erik_reproduce_results_zero_grad'
+OUTPUT_DIR = 'mnist_cifar_zero_grad'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
@@ -39,34 +39,34 @@ OUTPUT_DIR = 'erik_reproduce_results_zero_grad'
 # be grid-searched over. 
 # Note that the second parameter must be a dictionary in which each
 # value is a list of options.
-# QUEUE = [
-#     ('mnist', dict(
-#         p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
-#         T=[5],
-#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-#         batch_size=[50], # consider [10, 30, 50, 65]
-#         num_centroids=[4], 
-#         model_training_epoch=[50], # consider [10, 20, 50]
-#         early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
-#         random_seed=range(5),
-#         class_balanced=[True],
-#         execute_early_stopping=[False]
-#         ),
-#     ),
-#     ('cifar10', dict(
-#         p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
-#         T=[5],
-#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-#         batch_size=[50], # consider [10, 30, 50, 65]
-#         num_centroids=[4], 
-#         model_training_epoch=[50], # consider [10, 20, 50]
-#         early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
-#         random_seed=range(5),
-#         class_balanced=[True],
-#         execute_early_stopping=[False],
-#         ),
-#     ),
-# ]
+QUEUE = [
+    ('mnist', dict(
+        p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
+        T=[5],
+        learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+        batch_size=[50], # consider [10, 30, 50, 65]
+        num_centroids=[4], 
+        model_training_epoch=[50], # consider [10, 20, 50]
+        early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
+        random_seed=range(5),
+        class_balanced=[True],
+        execute_early_stopping=[False]
+        ),
+    ),
+    ('cifar10', dict(
+        p=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.9], 
+        T=[5],
+        learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+        batch_size=[50], # consider [10, 30, 50, 65]
+        num_centroids=[4], 
+        model_training_epoch=[50], # consider [10, 20, 50]
+        early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
+        random_seed=range(5),
+        class_balanced=[True],
+        execute_early_stopping=[False],
+        ),
+    ),
+]
 
 #FULL MNIST
 # QUEUE = [
@@ -122,34 +122,34 @@ OUTPUT_DIR = 'erik_reproduce_results_zero_grad'
 # ]
 
 # # # #CIFAR ERIK TEST
-QUEUE = [
-    ('mnist', dict(
-        p=[0.001, 0.005, 0.01, 0.05, 0.2], 
-        T=[5],
-        learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-        batch_size=[30], # consider [10, 30, 50, 65]
-        num_centroids=[4], 
-        model_training_epoch=[20], # consider [10, 20, 50]
-        early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=[1],
-        class_balanced=[True],
-        execute_early_stopping=[False]
-        ),
-    ),
-    ('cifar10', dict(
-        p=[0.001, 0.005, 0.01, 0.05, 0.2], 
-        T=[5],
-        learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
-        batch_size=[30], # consider [10, 30, 50, 65]
-        num_centroids=[4], 
-        model_training_epoch=[20], # consider [10, 20, 50]
-        early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=[1],
-        class_balanced=[True],
-        execute_early_stopping=[False],
-        ),
-    ),
-]
+# QUEUE = [
+#     ('mnist', dict(
+#         p=[0.001, 0.005, 0.01, 0.05, 0.2], 
+#         T=[5],
+#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         batch_size=[30], # consider [10, 30, 50, 65]
+#         num_centroids=[4], 
+#         model_training_epoch=[20], # consider [10, 20, 50]
+#         early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
+#         random_seed=[1],
+#         class_balanced=[True],
+#         execute_early_stopping=[False]
+#         ),
+#     ),
+#     ('cifar10', dict(
+#         p=[0.001, 0.005, 0.01, 0.05, 0.2], 
+#         T=[5],
+#         learning_rate=[0.001], # consider [0.01, 0.005, 0.001]
+#         batch_size=[30], # consider [10, 30, 50, 65]
+#         num_centroids=[4], 
+#         model_training_epoch=[20], # consider [10, 20, 50]
+#         early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
+#         random_seed=[1],
+#         class_balanced=[True],
+#         execute_early_stopping=[False],
+#         ),
+#     ),
+# ]
 
 
 def run(exp_dir, exp_name, exp_kwargs):
