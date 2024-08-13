@@ -187,7 +187,7 @@ def run_cifar10(exp_kwargs, train_full_only=True):
 		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn') #icarl memory set,
 		# ]
 
-		managers = [GSSMemorySetManager(p)]
+		managers = [RandomMemorySetManager(p)]
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:

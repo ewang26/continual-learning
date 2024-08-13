@@ -400,6 +400,18 @@ def train(
 		callbacks['val_loss'].append(val_loss)
 		callbacks['train_acc'].append(train_acc)
 		callbacks['val_acc'].append(val_acc)
+		
+		print("train_loss:")
+		print(train_loss)
+
+		print("val_loss:")
+		print(val_loss)
+
+		print("train_acc:")
+		print(train_acc)
+
+		print("val_acc:")
+		print(val_acc)
 
 		# Print training stats at checkpoint
 		if epoch % check_point == 0:    
