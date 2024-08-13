@@ -23,7 +23,7 @@ import time
 # session. You can use this to either run a sequence of jobs locally
 # on your machine, or to run a sequence of jobs one after another
 # in an interactive shell on odyssey.
-DRYRUN = False
+DRYRUN = True
 
 # This is the base directory where the results will be stored.
 # On Odyssey, you may not want this to be your home directory
@@ -95,7 +95,7 @@ OUTPUT_DIR = 'erik_reproduce_results'
 #         num_centroids=[4], 
 #         model_training_epoch=[1], # consider [10, 20, 50]
 #         early_stopping_threshold=[5.], # consider [0.1, 0.5, 1., 5., 10.]
-#         random_seed=1,
+#         random_seed=[1],
 #         class_balanced=[True],
 #         max_data_size=[100], 
 #         execute_early_stopping=[False]
@@ -131,7 +131,7 @@ QUEUE = [
         num_centroids=[4], 
         model_training_epoch=[20], # consider [10, 20, 50]
         early_stopping_threshold=[100000], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=1,
+        random_seed=[1],
         class_balanced=[True],
         execute_early_stopping=[False]
         ),
@@ -144,7 +144,7 @@ QUEUE = [
         num_centroids=[4], 
         model_training_epoch=[20], # consider [10, 20, 50]
         early_stopping_threshold=[1000000], # consider [0.1, 0.5, 1., 5., 10.]
-        random_seed=1,
+        random_seed=[1],
         class_balanced=[True],
         execute_early_stopping=[False],
         ),
