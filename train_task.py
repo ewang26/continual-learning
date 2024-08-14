@@ -130,93 +130,6 @@ def get_gradients(X, y, model, criterion, weights=None):
 
     return np.concatenate(grad_list)
 
-    
-
-# EW experimental version	
-# def get_gradients(X, y, model, criterion, weights=None):
-#     '''
-#     Computes the gradients of a model evaluated at a batch of data
-#     '''
-#     # Zero out the gradients
-#     model.zero_grad()
-
-#     outputs = model(X)
-    
-#     # Remove the last column if it's not part of the target
-#     y = y[:, :-1].flatten() if y.dim() > 1 else y
-
-#     if weights is not None:
-#         assert len(weights) == len(y)
-#     else: 
-#         weights = torch.ones(y.shape[0], device=y.device)
-
-#     # Compute the loss
-#     loss = criterion(outputs, y)
-    
-#     # Apply weights if the loss is not reduced
-#     if loss.dim() > 0:
-#         loss = (loss * weights).mean()
-    
-#     # Compute gradients
-#     loss.backward()
-
-#     grad_list = []
-#     for name, p in model.named_parameters():
-#         if p.grad is not None:
-#             grad_list.append(p.grad.clone().detach().cpu().numpy().flatten())
-#         else:
-#             grad_list.append(np.zeros_like(p.data.cpu().numpy().flatten()))
-
-#     return np.concatenate(grad_list)
-
-# EW Experimental Version with layers
-# def get_gradients(X, y, model, criterion, weights=None):
-#     model.zero_grad()
-
-#     outputs = model(X)
-#     y = y[:, :-1].flatten() if y.dim() > 1 else y
-
-#     if weights is not None:
-#         assert len(weights) == len(y)
-#         weights = weights.to(y.device)
-#     else: 
-#         weights = torch.ones(y.shape[0], device=y.device)
-
-#     loss = criterion(outputs, y)
-    
-#     if loss.dim() > 0:
-#         individual_losses = loss * weights
-#         loss = individual_losses.mean()
-    
-#     loss.backward()
-
-#     grad_list = []
-#     grad_dict = {}
-#     for name, p in model.named_parameters():
-#         # if p.grad is not None and name == 'fc1.weight': # this was for MNIST only
-#         if p.grad is not None:
-#             # grad_list.append(p.grad.clone().detach().cpu().numpy().flatten())
-#             grad_dict[name] = {
-#             'grad': p.grad.clone().detach().cpu().numpy(), 'data': p.data.clone().detach().cpu().numpy()}
-#             grad_list.append(p.grad.clone().detach().cpu().numpy().flatten())
-#     return np.concatenate(grad_list)
-
-# EW experiment on random data
-def generate_random_memory_set():
-    # Generate random data for x
-    x = torch.rand(10, 3, 32, 32)  # Random values between 0 and 1
-
-    # Create the normalization transform
-    normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-
-    # Apply normalization
-    x_normalized = normalize(x)
-
-    # Generate random data for y
-    y = torch.randint(0, 2, (10, 2), dtype=torch.long)  # Random binary values as Long
-
-    return x_normalized, y
-
 # Compute gradient similarity
 def comupte_gradient_similarity(model_1, model_2, memory_sets, memory_weights, tasks_data, criterion):
     '''
@@ -231,29 +144,16 @@ def comupte_gradient_similarity(model_1, model_2, memory_sets, memory_weights, t
     model_1_memory_grad = get_gradients(combined_memory_x, combined_memory_y, model_1, criterion, combined_memory_weights)
     model_2_memory_grad = get_gradients(combined_memory_x, combined_memory_y, model_2, criterion, combined_memory_weights)
 
-    # a = get_gradients(combined_memory_x, combined_memory_y, model_1, criterion)
-
     # Combine training data for tasks 1 through T-1; tasks_data includes T, but we omit task T (4)
     combined_train_x, combined_train_y = combine_memory_sets(tasks_data, omit_task=1) #note that combine_memory_set doesn't care if the input is memory sets or full training data
     # Evaluate model gradients on combined memory set
     model_1_full_grad = get_gradients(combined_train_x, combined_train_y, model_1, criterion)
     model_2_full_grad = get_gradients(combined_train_x, combined_train_y, model_2, criterion)
 
-
-    # sim_a = np.dot(a, model_1_full_grad) / (np.linalg.norm(a) * np.linalg.norm(model_1_full_grad))
-
     # Compute gradient similarity for model 1 on memory sets vs model 1 on full training sets
     sim_memory_1 = np.dot(model_1_memory_grad, model_1_full_grad) / (np.linalg.norm(model_1_memory_grad) * np.linalg.norm(model_1_full_grad))
     # Compute gradient similarity for model 2 on memory sets vs model 2 on full training sets
     sim_memory_2 = np.dot(model_2_memory_grad, model_2_full_grad) / (np.linalg.norm(model_2_memory_grad) * np.linalg.norm(model_2_full_grad))
-
-    mse_memory_1 = np.mean((model_1_memory_grad - model_1_full_grad) ** 2)
-    mse_memory_2 = np.mean((model_2_memory_grad - model_2_full_grad) ** 2)
-
-    norm_memory_1 = np.linalg.norm(model_1_memory_grad - model_1_full_grad)
-    norm_memory_2 = np.linalg.norm(model_2_memory_grad - model_2_full_grad)
-
-    breakpoint()
 
     return sim_memory_1, sim_memory_2
 
@@ -967,7 +867,6 @@ def CL_tasks(
             rand,
             class_balanced=class_balanced, 
         )
-        breakpoint()
 
         # Compute gradient similarity for M1 and M2 on full training data dn on memory sets
         M1_sim, M2_sim = comupte_gradient_similarity(models['M1'], models['M2'], memory_sets, memory_weights, tasks_data, criterion)
