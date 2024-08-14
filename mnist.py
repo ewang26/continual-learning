@@ -181,7 +181,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 			)
 
 		# Initialize memory set managers
-		managers = [RandomMemorySetManager(p)]
+		# managers = [RandomMemorySetManager(p)]
 
 		# managers = [
 		# 	RandomMemorySetManager(p), #random memory set
@@ -192,7 +192,7 @@ def run_mnist(exp_kwargs, train_full_only=True):
 		# ]
 
 		#GSS
-		# managers = [RandomMemorySetManager(p)] #GSS memory set
+		managers = [GSSMemorySetManager(p)] #GSS memory set
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:

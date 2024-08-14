@@ -4,9 +4,9 @@
 #SBATCH -t 3-00:00 # Runtime in D-HH:MM
 #SBATCH -p gpu # GPU partition
 #SBATCH --gres=gpu:1 # Request 1 GPU
-#SBATCH --mem=100GB # Memory pool for all cores (see also --mem-per-cpu)
-#SBATCH -o GSS/mnist/out_%j.txt # File to which STDOUT will be written
-#SBATCH -e GSS/mnist/err_%j.txt # File to which STDERR will be written
+#SBATCH --mem=1000GB # Memory pool for all cores (see also --mem-per-cpu)
+#SBATCH -o gss_mnist_cifar_zero_grad/mnist/out_%j.txt # File to which STDOUT will be written
+#SBATCH -e gss_mnist_cifar_zero_grad/mnist/err_%j.txt # File to which STDERR will be written
 
 module load cuda/12.2.0-fasrc01
 module load python/3.10.9-fasrc01
@@ -18,4 +18,4 @@ VENV_PATH="/n/home12/thb489/new_continual_learning/continual-learning/myenv"
 cd ${MAIN_PATH}
 source "${VENV_PATH}/bin/activate"
 
-python -u ${MAIN_PATH}/run.py GSS/mnist mnist '{"p": 0.9, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 50, "early_stopping_threshold": 100000, "random_seed": 4, "class_balanced": true, "execute_early_stopping": false}'
+python -u ${MAIN_PATH}/run.py gss_mnist_cifar_zero_grad/mnist mnist '{"p": 0.9, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 50, "early_stopping_threshold": 100000, "random_seed": 4, "class_balanced": true, "execute_early_stopping": false}'

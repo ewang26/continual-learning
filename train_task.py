@@ -110,6 +110,7 @@ def get_gradients(X, y, model, criterion, weights=None):
 	'''
 
 	outputs = model(X)
+	model.zero_grad()
 	# Compute per datapoint weights
 	indices = y[:, -1].flatten()
 	y = y[:, :-1].flatten()
