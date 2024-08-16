@@ -30,7 +30,7 @@ DRYRUN = False
 # If you're storing lots of files (or storing a lot of data).
 # OUTPUT_DIR = 'cifar_test'
 #OUTPUT_DIR = 'official_cifar10'
-OUTPUT_DIR = 'gss_mnist_cifar_zero_grad'
+OUTPUT_DIR = 'mnist_cifar_zero_grad2'
 
 # This list contains the jobs and hyper-parameters to search over.
 # The list consists of tuples, in which the first element is
