@@ -1,18 +1,12 @@
 #!/bin/bash
 #SBATCH -n 1 # Number of cores
 #SBATCH -N 1 # Ensure that all cores are on one machine
-#SBATCH -t 3-00:00 # Runtime in D-HH:MM
+#SBATCH -t 2-00:00 # Runtime in D-HH:MM
 #SBATCH -p gpu # GPU partition
 #SBATCH --gres=gpu:1 # Request 1 GPU
-<<<<<<< HEAD
-#SBATCH --mem=100GB # Memory pool for all cores (see also --mem-per-cpu)
-#SBATCH -o erik_reproduce_results/mnist/out_%j.txt # File to which STDOUT will be written
-#SBATCH -e erik_reproduce_results/mnist/err_%j.txt # File to which STDERR will be written
-=======
 #SBATCH --mem=1000GB # Memory pool for all cores (see also --mem-per-cpu)
-#SBATCH -o gss_mnist_cifar_zero_grad/mnist/out_%j.txt # File to which STDOUT will be written
-#SBATCH -e gss_mnist_cifar_zero_grad/mnist/err_%j.txt # File to which STDERR will be written
->>>>>>> a14bb0a6f8b9fae3bd66eae6724ad56071a75c4a
+#SBATCH -o mnist_cifar_zero_grad2/mnist/out_%j.txt # File to which STDOUT will be written
+#SBATCH -e mnist_cifar_zero_grad2/mnist/err_%j.txt # File to which STDERR will be written
 
 module load cuda/12.2.0-fasrc01
 module load python/3.10.9-fasrc01
@@ -24,8 +18,4 @@ VENV_PATH="/n/home12/thb489/new_continual_learning/continual-learning/myenv"
 cd ${MAIN_PATH}
 source "${VENV_PATH}/bin/activate"
 
-<<<<<<< HEAD
-python -u ${MAIN_PATH}/run.py erik_reproduce_results/mnist mnist '{"p": 0.001, "T": 5, "learning_rate": 0.001, "batch_size": 30, "num_centroids": 4, "model_training_epoch": 20, "early_stopping_threshold": 100000, "random_seed": 1, "class_balanced": true, "execute_early_stopping": false}'
-=======
-python -u ${MAIN_PATH}/run.py gss_mnist_cifar_zero_grad/mnist mnist '{"p": 0.9, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 50, "early_stopping_threshold": 100000, "random_seed": 4, "class_balanced": true, "execute_early_stopping": false}'
->>>>>>> a14bb0a6f8b9fae3bd66eae6724ad56071a75c4a
+python -u ${MAIN_PATH}/run.py mnist_cifar_zero_grad2/mnist mnist '{"p": 0.9, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 50, "early_stopping_threshold": 100000, "random_seed": 4, "class_balanced": true, "execute_early_stopping": false}'
