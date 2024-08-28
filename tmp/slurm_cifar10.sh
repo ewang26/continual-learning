@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH -n 1 # Number of cores
 #SBATCH -N 1 # Ensure that all cores are on one machine
-#SBATCH -t 2-00:00 # Runtime in D-HH:MM
+#SBATCH -t 3-00:00 # Runtime in D-HH:MM
 #SBATCH -p gpu # GPU partition
 #SBATCH --gres=gpu:1 # Request 1 GPU
 #SBATCH --mem=1000GB # Memory pool for all cores (see also --mem-per-cpu)
-#SBATCH -o mnist_cifar_zero_grad2/cifar10/out_%j.txt # File to which STDOUT will be written
-#SBATCH -e mnist_cifar_zero_grad2/cifar10/err_%j.txt # File to which STDERR will be written
+#SBATCH -o GSS2/cifar10/out_%j.txt # File to which STDOUT will be written
+#SBATCH -e GSS2/cifar10/err_%j.txt # File to which STDERR will be written
 
 module load cuda/12.2.0-fasrc01
 module load python/3.10.9-fasrc01
@@ -18,4 +18,4 @@ VENV_PATH="/n/home12/thb489/new_continual_learning/continual-learning/myenv"
 cd ${MAIN_PATH}
 source "${VENV_PATH}/bin/activate"
 
-python -u ${MAIN_PATH}/run.py mnist_cifar_zero_grad2/cifar10 cifar10 '{"p": 0.9, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 50, "early_stopping_threshold": 1000000, "random_seed": 4, "class_balanced": true, "execute_early_stopping": false}'
+python -u ${MAIN_PATH}/run.py GSS2/cifar10 cifar10 '{"p": 0.9, "T": 5, "learning_rate": 0.001, "batch_size": 50, "num_centroids": 4, "model_training_epoch": 50, "early_stopping_threshold": 1000000, "random_seed": 4, "class_balanced": true, "execute_early_stopping": false}'
