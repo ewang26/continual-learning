@@ -181,19 +181,18 @@ def run_cifar100(exp_kwargs, train_full_only=True):
 			)
 
 		# Initialize memory set managers
-		# managers = [
-		# 	RandomMemorySetManager(p), #random memory set
-		# 	KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
-		# 	LambdaMemorySetManager(p), #lambda memory set
-		# 	GSSMemorySetManager(p), #GSS memory set
-		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn', classes_per_task=classes_per_task), #icarl memory set
-		# 	iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn', classes_per_task=classes_per_task), #icarl memory set,
-		# ]
-
-		print('here')
 		managers = [
-			RandomMemorySetManager(p)
+			RandomMemorySetManager(p), #random memory set
+			KMeansMemorySetManager(p, num_centroids, device, max_iter=50), #kmeans memory set
+			LambdaMemorySetManager(p), #lambda memory set
+			# GSSMemorySetManager(p), #GSS memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='icarl', architecture='cnn', classes_per_task=classes_per_task), #icarl memory set
+			iCaRL(input_dim, feature_dim, num_exemplars, p, loss_type='replay', architecture='cnn', classes_per_task=classes_per_task), #icarl memory set,
 		]
+
+		# managers = [
+		# 	RandomMemorySetManager(p)
+		# ]
 
 		# Iterate through all memory managers
 		for memory_set_manager in managers:
