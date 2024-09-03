@@ -4,7 +4,7 @@
 #SBATCH -t 1-00:00 # Runtime in D-HH:MM
 #SBATCH -p gpu # GPU partition
 #SBATCH --gres=gpu:1 # Request 1 GPU
-#SBATCH --mem=100GB # Memory pool for all cores (see also --mem-per-cpu)
+#SBATCH --mem=1000GB # Memory pool for all cores (see also --mem-per-cpu)
 #SBATCH -o EXPDIR/out_%j.txt # File to which STDOUT will be written
 #SBATCH -e EXPDIR/err_%j.txt # File to which STDERR will be written
 
