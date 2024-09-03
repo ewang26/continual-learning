@@ -1,0 +1,1018 @@
+Using CUDA
+Running experiment cifar100:
+Results are stored in: cifar100_first_experiment/cifar100
+with hyperparameters {'p': 0.002, 'T': 5, 'learning_rate': 0.001, 'batch_size': 50, 'num_centroids': 4, 'model_training_epoch': 50, 'early_stopping_threshold': 100000, 'random_seed': 0, 'class_balanced': True, 'execute_early_stopping': False, 'exp_name': 'cifar100'}
+
+
+exp_kwargs from run.py {'p': 0.002, 'T': 5, 'learning_rate': 0.001, 'batch_size': 50, 'num_centroids': 4, 'model_training_epoch': 50, 'early_stopping_threshold': 100000, 'random_seed': 0, 'class_balanced': True, 'execute_early_stopping': False, 'exp_name': 'cifar100'}
+Files already downloaded and verified
+Files already downloaded and verified
+task 0, classes 0, 1
+task 1, classes 20, 21
+task 2, classes 40, 41
+task 3, classes 60, 61
+task 4, classes 80, 81
+Training models M1 and M2
+Training model M1
+train_loss:
+89340.02358717483
+val_loss:
+tensor(9329.8677)
+train_acc:
+0.035416666666666666
+val_acc:
+0.07041666666666667
+epoch 1 train loss: 89340.024, val loss: 9329.868, train acc: 0.035, val acc: 0.070
+diff inf
+train_loss:
+80296.23666815492
+val_loss:
+tensor(8552.4266)
+train_acc:
+0.09513888888888888
+val_acc:
+0.12791666666666668
+epoch 2 train loss: 80296.237, val loss: 8552.427, train acc: 0.095, val acc: 0.128
+diff 777.4410691602079
+train_loss:
+74228.4753798405
+val_loss:
+tensor(7896.2132)
+train_acc:
+0.15097222222222223
+val_acc:
+0.18916666666666668
+epoch 3 train loss: 74228.475, val loss: 7896.213, train acc: 0.151, val acc: 0.189
+diff 656.2133842364956
+train_loss:
+68860.71910101174
+val_loss:
+tensor(7698.2613)
+train_acc:
+0.20092592592592592
+val_acc:
+0.20291666666666666
+epoch 4 train loss: 68860.719, val loss: 7698.261, train acc: 0.201, val acc: 0.203
+diff 197.9519126560681
+train_loss:
+64473.07184293235
+val_loss:
+tensor(7421.5130)
+train_acc:
+0.24064814814814814
+val_acc:
+0.23666666666666666
+epoch 5 train loss: 64473.072, val loss: 7421.513, train acc: 0.241, val acc: 0.237
+diff 276.7482875656715
+train_loss:
+60528.797147544916
+val_loss:
+tensor(7168.9115)
+train_acc:
+0.27425925925925926
+val_acc:
+0.25125
+epoch 6 train loss: 60528.797, val loss: 7168.912, train acc: 0.274, val acc: 0.251
+diff 252.6015242031026
+train_loss:
+56426.97366636703
+val_loss:
+tensor(7246.0496)
+train_acc:
+0.3163425925925926
+val_acc:
+0.25375
+epoch 7 train loss: 56426.974, val loss: 7246.050, train acc: 0.316, val acc: 0.254
+diff 77.13813860799746
+train_loss:
+52380.02570220661
+val_loss:
+tensor(7551.5069)
+train_acc:
+0.3552314814814815
+val_acc:
+0.2654166666666667
+epoch 8 train loss: 52380.026, val loss: 7551.507, train acc: 0.355, val acc: 0.265
+diff 305.457241897534
+train_loss:
+47681.57240783544
+val_loss:
+tensor(7430.3905)
+train_acc:
+0.40375
+val_acc:
+0.27375
+epoch 9 train loss: 47681.572, val loss: 7430.390, train acc: 0.404, val acc: 0.274
+diff 121.11640838223411
+train_loss:
+43245.880963648735
+val_loss:
+tensor(7651.2060)
+train_acc:
+0.44805555555555554
+val_acc:
+0.25916666666666666
+epoch 10 train loss: 43245.881, val loss: 7651.206, train acc: 0.448, val acc: 0.259
+diff 220.81554631293875
+train_loss:
+38992.78770282591
+val_loss:
+tensor(8266.1507)
+train_acc:
+0.4935185185185185
+val_acc:
+0.26916666666666667
+epoch 11 train loss: 38992.788, val loss: 8266.151, train acc: 0.494, val acc: 0.269
+diff 614.9446909254266
+train_loss:
+34160.87750023764
+val_loss:
+tensor(8772.9646)
+train_acc:
+0.5535185185185185
+val_acc:
+0.27458333333333335
+epoch 12 train loss: 34160.878, val loss: 8772.965, train acc: 0.554, val acc: 0.275
+diff 506.8138780133213
+train_loss:
+30090.62903500333
+val_loss:
+tensor(9461.3297)
+train_acc:
+0.5981481481481481
+val_acc:
+0.26208333333333333
+epoch 13 train loss: 30090.629, val loss: 9461.330, train acc: 0.598, val acc: 0.262
+diff 688.3650666083468
+train_loss:
+26555.55577412852
+val_loss:
+tensor(10041.7842)
+train_acc:
+0.6394444444444445
+val_acc:
+0.27166666666666667
+epoch 14 train loss: 26555.556, val loss: 10041.784, train acc: 0.639, val acc: 0.272
+diff 580.4545263532145
+train_loss:
+23611.062491396722
+val_loss:
+tensor(11224.6823)
+train_acc:
+0.6771759259259259
+val_acc:
+0.26208333333333333
+epoch 15 train loss: 23611.062, val loss: 11224.682, train acc: 0.677, val acc: 0.262
+diff 1182.8981110912027
+train_loss:
+21353.267478695656
+val_loss:
+tensor(11535.5872)
+train_acc:
+0.7015277777777778
+val_acc:
+0.2575
+epoch 16 train loss: 21353.267, val loss: 11535.587, train acc: 0.702, val acc: 0.258
+diff 310.9048636837433
+train_loss:
+18851.601745938497
+val_loss:
+tensor(13203.1090)
+train_acc:
+0.7364351851851851
+val_acc:
+0.25625
+epoch 17 train loss: 18851.602, val loss: 13203.109, train acc: 0.736, val acc: 0.256
+diff 1667.5217983022358
+train_loss:
+17336.132477629213
+val_loss:
+tensor(13567.0655)
+train_acc:
+0.7572222222222222
+val_acc:
+0.2475
+epoch 18 train loss: 17336.132, val loss: 13567.065, train acc: 0.757, val acc: 0.247
+diff 363.9565084076912
+train_loss:
+16849.51638314106
+val_loss:
+tensor(14056.8324)
+train_acc:
+0.7666666666666667
+val_acc:
+0.23625
+epoch 19 train loss: 16849.516, val loss: 14056.832, train acc: 0.767, val acc: 0.236
+diff 489.7669052160072
+train_loss:
+15138.222803713674
+val_loss:
+tensor(14990.4859)
+train_acc:
+0.7887962962962963
+val_acc:
+0.25
+epoch 20 train loss: 15138.223, val loss: 14990.486, train acc: 0.789, val acc: 0.250
+diff 933.6535336998913
+train_loss:
+14916.843961811635
+val_loss:
+tensor(14871.8272)
+train_acc:
+0.7956018518518518
+val_acc:
+0.23625
+epoch 21 train loss: 14916.844, val loss: 14871.827, train acc: 0.796, val acc: 0.236
+diff 118.65871309301292
+train_loss:
+13738.201874737359
+val_loss:
+tensor(16441.1043)
+train_acc:
+0.8091203703703703
+val_acc:
+0.245
+epoch 22 train loss: 13738.202, val loss: 16441.104, train acc: 0.809, val acc: 0.245
+diff 1569.2770872058281
+train_loss:
+13225.105573546729
+val_loss:
+tensor(16749.1495)
+train_acc:
+0.8186111111111111
+val_acc:
+0.245
+epoch 23 train loss: 13225.106, val loss: 16749.149, train acc: 0.819, val acc: 0.245
+diff 308.045214153557
+train_loss:
+12806.134271582643
+val_loss:
+tensor(17679.2392)
+train_acc:
+0.8235648148148148
+val_acc:
+0.24
+epoch 24 train loss: 12806.134, val loss: 17679.239, train acc: 0.824, val acc: 0.240
+diff 930.0897073065134
+train_loss:
+13057.116081283635
+val_loss:
+tensor(17445.5023)
+train_acc:
+0.8221759259259259
+val_acc:
+0.22791666666666666
+epoch 25 train loss: 13057.116, val loss: 17445.502, train acc: 0.822, val acc: 0.228
+diff 233.73691895230513
+train_loss:
+12099.572261966292
+val_loss:
+tensor(17814.3638)
+train_acc:
+0.8327314814814815
+val_acc:
+0.24041666666666667
+epoch 26 train loss: 12099.572, val loss: 17814.364, train acc: 0.833, val acc: 0.240
+diff 368.8614693889758
+train_loss:
+11801.976338596634
+val_loss:
+tensor(18356.9962)
+train_acc:
+0.8393981481481482
+val_acc:
+0.23416666666666666
+epoch 27 train loss: 11801.976, val loss: 18356.996, train acc: 0.839, val acc: 0.234
+diff 542.6324733423498
+train_loss:
+11557.795879452779
+val_loss:
+tensor(18658.8933)
+train_acc:
+0.8461574074074074
+val_acc:
+0.245
+epoch 28 train loss: 11557.796, val loss: 18658.893, train acc: 0.846, val acc: 0.245
+diff 301.8970872478603
+train_loss:
+11415.814328601646
+val_loss:
+tensor(18884.0700)
+train_acc:
+0.8457870370370371
+val_acc:
+0.23833333333333334
+epoch 29 train loss: 11415.814, val loss: 18884.070, train acc: 0.846, val acc: 0.238
+diff 225.17665791248874
+train_loss:
+10871.499962516335
+val_loss:
+tensor(18957.8462)
+train_acc:
+0.8543518518518518
+val_acc:
+0.22708333333333333
+epoch 30 train loss: 10871.500, val loss: 18957.846, train acc: 0.854, val acc: 0.227
+diff 73.77627476691123
+train_loss:
+11519.165209114424
+val_loss:
+tensor(19494.5944)
+train_acc:
+0.8464351851851852
+val_acc:
+0.24125
+epoch 31 train loss: 11519.165, val loss: 19494.594, train acc: 0.846, val acc: 0.241
+diff 536.7481310040894
+train_loss:
+10275.544549884937
+val_loss:
+tensor(21614.8882)
+train_acc:
+0.8626388888888888
+val_acc:
+0.22583333333333333
+epoch 32 train loss: 10275.545, val loss: 21614.888, train acc: 0.863, val acc: 0.226
+diff 2120.2937814117067
+train_loss:
+10747.146957883291
+val_loss:
+tensor(21077.6250)
+train_acc:
+0.8573148148148149
+val_acc:
+0.22958333333333333
+epoch 33 train loss: 10747.147, val loss: 21077.625, train acc: 0.857, val acc: 0.230
+diff 537.2631781138261
+train_loss:
+10209.639882623964
+val_loss:
+tensor(21052.2184)
+train_acc:
+0.8675925925925926
+val_acc:
+0.23583333333333334
+epoch 34 train loss: 10209.640, val loss: 21052.218, train acc: 0.868, val acc: 0.236
+diff 25.406591741400916
+train_loss:
+10513.063284128515
+val_loss:
+tensor(20746.0989)
+train_acc:
+0.8663425925925926
+val_acc:
+0.24458333333333335
+epoch 35 train loss: 10513.063, val loss: 20746.099, train acc: 0.866, val acc: 0.245
+diff 306.11946466265726
+train_loss:
+10102.86200035156
+val_loss:
+tensor(21834.2607)
+train_acc:
+0.8693981481481482
+val_acc:
+0.23791666666666667
+epoch 36 train loss: 10102.862, val loss: 21834.261, train acc: 0.869, val acc: 0.238
+diff 1088.1617340205921
+train_loss:
+9891.530676343433
+val_loss:
+tensor(23223.1467)
+train_acc:
+0.87
+val_acc:
+0.2375
+epoch 37 train loss: 9891.531, val loss: 23223.147, train acc: 0.870, val acc: 0.237
+diff 1388.8859939193608
+train_loss:
+10381.60524578319
+val_loss:
+tensor(22495.5426)
+train_acc:
+0.8687037037037038
+val_acc:
+0.24083333333333334
+epoch 38 train loss: 10381.605, val loss: 22495.543, train acc: 0.869, val acc: 0.241
+diff 727.6040712296926
+train_loss:
+10213.410944248257
+val_loss:
+tensor(22486.0104)
+train_acc:
+0.8722685185185185
+val_acc:
+0.23166666666666666
+epoch 39 train loss: 10213.411, val loss: 22486.010, train acc: 0.872, val acc: 0.232
+diff 9.532177623321331
+train_loss:
+10366.254161858964
+val_loss:
+tensor(21813.2326)
+train_acc:
+0.8680555555555556
+val_acc:
+0.24083333333333334
+epoch 40 train loss: 10366.254, val loss: 21813.233, train acc: 0.868, val acc: 0.241
+diff 672.7777582955896
+train_loss:
+9875.421697015818
+val_loss:
+tensor(22025.1383)
+train_acc:
+0.8749537037037037
+val_acc:
+0.23166666666666666
+epoch 41 train loss: 9875.422, val loss: 22025.138, train acc: 0.875, val acc: 0.232
+diff 211.90566406050857
+train_loss:
+9520.13602134517
+val_loss:
+tensor(23459.1016)
+train_acc:
+0.8804166666666666
+val_acc:
+0.235
+epoch 42 train loss: 9520.136, val loss: 23459.102, train acc: 0.880, val acc: 0.235
+diff 1433.9632544414853
+train_loss:
+9898.902263169528
+val_loss:
+tensor(23713.3446)
+train_acc:
+0.8779166666666667
+val_acc:
+0.21666666666666667
+epoch 43 train loss: 9898.902, val loss: 23713.345, train acc: 0.878, val acc: 0.217
+diff 254.24308209009178
+train_loss:
+9085.702693439616
+val_loss:
+tensor(24204.4715)
+train_acc:
+0.8868981481481482
+val_acc:
+0.23333333333333334
+epoch 44 train loss: 9085.703, val loss: 24204.472, train acc: 0.887, val acc: 0.233
+diff 491.1268972488251
+train_loss:
+9862.571744942043
+val_loss:
+tensor(24902.9416)
+train_acc:
+0.8785648148148149
+val_acc:
+0.22833333333333333
+epoch 45 train loss: 9862.572, val loss: 24902.942, train acc: 0.879, val acc: 0.228
+diff 698.4700518351929
+train_loss:
+10203.12478172071
+val_loss:
+tensor(25437.4202)
+train_acc:
+0.8762037037037037
+val_acc:
+0.22708333333333333
+epoch 46 train loss: 10203.125, val loss: 25437.420, train acc: 0.876, val acc: 0.227
+diff 534.4785815663163
+train_loss:
+9722.283705424245
+val_loss:
+tensor(24576.4453)
+train_acc:
+0.8847222222222222
+val_acc:
+0.24
+epoch 47 train loss: 9722.284, val loss: 24576.445, train acc: 0.885, val acc: 0.240
+diff 860.9748290097486
+train_loss:
+9342.11003067977
+val_loss:
+tensor(23609.3692)
+train_acc:
+0.8851388888888889
+val_acc:
+0.24166666666666667
+epoch 48 train loss: 9342.110, val loss: 23609.369, train acc: 0.885, val acc: 0.242
+diff 967.0761682667035
+train_loss:
+9365.929715670938
+val_loss:
+tensor(26628.2406)
+train_acc:
+0.8864351851851852
+val_acc:
+0.23666666666666666
+epoch 49 train loss: 9365.930, val loss: 26628.241, train acc: 0.886, val acc: 0.237
+diff 3018.8714667470886
+train_loss:
+9369.134186810405
+val_loss:
+tensor(26484.4016)
+train_acc:
+0.8851851851851852
+val_acc:
+0.23625
+epoch 50 train loss: 9369.134, val loss: 26484.402, train acc: 0.885, val acc: 0.236
+diff 143.83906916994601
+Training model M2
+train_loss:
+124378.82596178785
+val_loss:
+tensor(13817.3814)
+train_acc:
+0.008925925925925926
+val_acc:
+0.008
+epoch 1 train loss: 124378.826, val loss: 13817.381, train acc: 0.009, val acc: 0.008
+diff inf
+train_loss:
+124358.90995999804
+val_loss:
+tensor(13819.6858)
+train_acc:
+0.010777777777777778
+val_acc:
+0.008
+epoch 2 train loss: 124358.910, val loss: 13819.686, train acc: 0.011, val acc: 0.008
+diff 2.304357155710022
+train_loss:
+124354.85158727739
+val_loss:
+tensor(13821.0953)
+train_acc:
+0.010148148148148147
+val_acc:
+0.008
+epoch 3 train loss: 124354.852, val loss: 13821.095, train acc: 0.010, val acc: 0.008
+diff 1.4095141660000081
+train_loss:
+124355.24926020278
+val_loss:
+tensor(13820.6130)
+train_acc:
+0.010481481481481482
+val_acc:
+0.009666666666666667
+epoch 4 train loss: 124355.249, val loss: 13820.613, train acc: 0.010, val acc: 0.010
+diff 0.4822750290422846
+train_loss:
+124355.44702130092
+val_loss:
+tensor(13820.8763)
+train_acc:
+0.010925925925925926
+val_acc:
+0.009666666666666667
+epoch 5 train loss: 124355.447, val loss: 13820.876, train acc: 0.011, val acc: 0.010
+diff 0.26332027234821
+train_loss:
+124354.82871662022
+val_loss:
+tensor(13821.0438)
+train_acc:
+0.010037037037037037
+val_acc:
+0.009666666666666667
+epoch 6 train loss: 124354.829, val loss: 13821.044, train acc: 0.010, val acc: 0.010
+diff 0.16742338470612594
+train_loss:
+124354.88615223582
+val_loss:
+tensor(13821.4601)
+train_acc:
+0.010185185185185186
+val_acc:
+0.007666666666666666
+epoch 7 train loss: 124354.886, val loss: 13821.460, train acc: 0.010, val acc: 0.008
+diff 0.4163110994741146
+train_loss:
+124355.40001284698
+val_loss:
+tensor(13821.6941)
+train_acc:
+0.010148148148148147
+val_acc:
+0.008
+epoch 8 train loss: 124355.400, val loss: 13821.694, train acc: 0.010, val acc: 0.008
+diff 0.2340469928276434
+train_loss:
+124356.02068519502
+val_loss:
+tensor(13821.6234)
+train_acc:
+0.009666666666666667
+val_acc:
+0.009666666666666667
+epoch 9 train loss: 124356.021, val loss: 13821.623, train acc: 0.010, val acc: 0.010
+diff 0.07075477816397324
+train_loss:
+124354.98101347717
+val_loss:
+tensor(13822.3196)
+train_acc:
+0.010851851851851852
+val_acc:
+0.007666666666666666
+epoch 10 train loss: 124354.981, val loss: 13822.320, train acc: 0.011, val acc: 0.008
+diff 0.6962249054377025
+train_loss:
+124355.08859800124
+val_loss:
+tensor(13822.1447)
+train_acc:
+0.010666666666666666
+val_acc:
+0.009666666666666667
+epoch 11 train loss: 124355.089, val loss: 13822.145, train acc: 0.011, val acc: 0.010
+diff 0.17493898803877528
+train_loss:
+124355.86440475812
+val_loss:
+tensor(13822.5578)
+train_acc:
+0.01074074074074074
+val_acc:
+0.009666666666666667
+epoch 12 train loss: 124355.864, val loss: 13822.558, train acc: 0.011, val acc: 0.010
+diff 0.41311508945909736
+train_loss:
+124354.95946425427
+val_loss:
+tensor(13822.7202)
+train_acc:
+0.010481481481481482
+val_acc:
+0.008
+epoch 13 train loss: 124354.959, val loss: 13822.720, train acc: 0.010, val acc: 0.008
+diff 0.16240334606663964
+train_loss:
+124354.67820028067
+val_loss:
+tensor(13822.3507)
+train_acc:
+0.01062962962962963
+val_acc:
+0.008
+epoch 14 train loss: 124354.678, val loss: 13822.351, train acc: 0.011, val acc: 0.008
+diff 0.3694727512738609
+train_loss:
+124355.74953436614
+val_loss:
+tensor(13821.3802)
+train_acc:
+0.010814814814814815
+val_acc:
+0.008
+epoch 15 train loss: 124355.750, val loss: 13821.380, train acc: 0.011, val acc: 0.008
+diff 0.9704716565720446
+train_loss:
+124354.549187916
+val_loss:
+tensor(13821.9310)
+train_acc:
+0.010592592592592593
+val_acc:
+0.008
+epoch 16 train loss: 124354.549, val loss: 13821.931, train acc: 0.011, val acc: 0.008
+diff 0.5508165039027517
+train_loss:
+124354.97060330046
+val_loss:
+tensor(13823.5281)
+train_acc:
+0.010037037037037037
+val_acc:
+0.009666666666666667
+epoch 17 train loss: 124354.971, val loss: 13823.528, train acc: 0.010, val acc: 0.010
+diff 1.5970425048435573
+train_loss:
+124355.7178937199
+val_loss:
+tensor(13823.0086)
+train_acc:
+0.01
+val_acc:
+0.009666666666666667
+epoch 18 train loss: 124355.718, val loss: 13823.009, train acc: 0.010, val acc: 0.010
+diff 0.5195179986658331
+train_loss:
+124355.21782083751
+val_loss:
+tensor(13821.7816)
+train_acc:
+0.010481481481481482
+val_acc:
+0.009666666666666667
+epoch 19 train loss: 124355.218, val loss: 13821.782, train acc: 0.010, val acc: 0.010
+diff 1.2269397326035687
+train_loss:
+124354.19124679232
+val_loss:
+tensor(13821.4486)
+train_acc:
+0.010333333333333333
+val_acc:
+0.008
+epoch 20 train loss: 124354.191, val loss: 13821.449, train acc: 0.010, val acc: 0.008
+diff 0.3329978771689639
+train_loss:
+124355.55776806216
+val_loss:
+tensor(13821.3650)
+train_acc:
+0.010407407407407407
+val_acc:
+0.009666666666666667
+epoch 21 train loss: 124355.558, val loss: 13821.365, train acc: 0.010, val acc: 0.010
+diff 0.0836157548965275
+train_loss:
+124354.71713264559
+val_loss:
+tensor(13821.8678)
+train_acc:
+0.01
+val_acc:
+0.008
+epoch 22 train loss: 124354.717, val loss: 13821.868, train acc: 0.010, val acc: 0.008
+diff 0.5028226323756826
+train_loss:
+124355.62522426795
+val_loss:
+tensor(13821.6871)
+train_acc:
+0.010888888888888889
+val_acc:
+0.008
+epoch 23 train loss: 124355.625, val loss: 13821.687, train acc: 0.011, val acc: 0.008
+diff 0.1807028559705941
+train_loss:
+124355.52076709055
+val_loss:
+tensor(13821.9765)
+train_acc:
+0.009851851851851851
+val_acc:
+0.009666666666666667
+epoch 24 train loss: 124355.521, val loss: 13821.977, train acc: 0.010, val acc: 0.010
+diff 0.2894029888375371
+train_loss:
+124355.12725717132
+val_loss:
+tensor(13821.5641)
+train_acc:
+0.010333333333333333
+val_acc:
+0.009666666666666667
+epoch 25 train loss: 124355.127, val loss: 13821.564, train acc: 0.010, val acc: 0.010
+diff 0.4124211616690445
+train_loss:
+124355.74831830505
+val_loss:
+tensor(13821.9650)
+train_acc:
+0.009703703703703704
+val_acc:
+0.009666666666666667
+epoch 26 train loss: 124355.748, val loss: 13821.965, train acc: 0.010, val acc: 0.010
+diff 0.4008691931703652
+train_loss:
+124355.4751264392
+val_loss:
+tensor(13822.1676)
+train_acc:
+0.010925925925925926
+val_acc:
+0.009666666666666667
+epoch 27 train loss: 124355.475, val loss: 13822.168, train acc: 0.011, val acc: 0.010
+diff 0.20259652426466346
+train_loss:
+124356.06618379641
+val_loss:
+tensor(13822.0763)
+train_acc:
+0.010481481481481482
+val_acc:
+0.009666666666666667
+epoch 28 train loss: 124356.066, val loss: 13822.076, train acc: 0.010, val acc: 0.010
+diff 0.09131726035047905
+train_loss:
+124355.54017812017
+val_loss:
+tensor(13821.8925)
+train_acc:
+0.010814814814814815
+val_acc:
+0.009666666666666667
+epoch 29 train loss: 124355.540, val loss: 13821.892, train acc: 0.011, val acc: 0.010
+diff 0.18379493061365793
+train_loss:
+124355.65598087764
+val_loss:
+tensor(13821.4382)
+train_acc:
+0.010666666666666666
+val_acc:
+0.008
+epoch 30 train loss: 124355.656, val loss: 13821.438, train acc: 0.011, val acc: 0.008
+diff 0.4542875214901869
+train_loss:
+124354.89252842231
+val_loss:
+tensor(13821.8671)
+train_acc:
+0.01025925925925926
+val_acc:
+0.008
+epoch 31 train loss: 124354.893, val loss: 13821.867, train acc: 0.010, val acc: 0.008
+diff 0.428941699790812
+train_loss:
+124355.31313482103
+val_loss:
+tensor(13822.3265)
+train_acc:
+0.010074074074074074
+val_acc:
+0.009666666666666667
+epoch 32 train loss: 124355.313, val loss: 13822.327, train acc: 0.010, val acc: 0.010
+diff 0.4593870249009342
+train_loss:
+124355.36776672932
+val_loss:
+tensor(13821.5647)
+train_acc:
+0.009851851851851851
+val_acc:
+0.009666666666666667
+epoch 33 train loss: 124355.368, val loss: 13821.565, train acc: 0.010, val acc: 0.010
+diff 0.7617693911452079
+train_loss:
+124355.52994580279
+val_loss:
+tensor(13821.5833)
+train_acc:
+0.010592592592592593
+val_acc:
+0.008
+epoch 34 train loss: 124355.530, val loss: 13821.583, train acc: 0.011, val acc: 0.008
+diff 0.0185133629165648
+train_loss:
+124354.75833335424
+val_loss:
+tensor(13821.9172)
+train_acc:
+0.011074074074074075
+val_acc:
+0.008
+epoch 35 train loss: 124354.758, val loss: 13821.917, train acc: 0.011, val acc: 0.008
+diff 0.3339050311860774
+train_loss:
+124355.93365841104
+val_loss:
+tensor(13822.3908)
+train_acc:
+0.009962962962962963
+val_acc:
+0.008
+epoch 36 train loss: 124355.934, val loss: 13822.391, train acc: 0.010, val acc: 0.008
+diff 0.47366950619652926
+train_loss:
+124354.97723571376
+val_loss:
+tensor(13822.7556)
+train_acc:
+0.01074074074074074
+val_acc:
+0.008
+epoch 37 train loss: 124354.977, val loss: 13822.756, train acc: 0.011, val acc: 0.008
+diff 0.36479823957779445
+train_loss:
+124354.67234468313
+val_loss:
+tensor(13822.1643)
+train_acc:
+0.011
+val_acc:
+0.009666666666666667
+epoch 38 train loss: 124354.672, val loss: 13822.164, train acc: 0.011, val acc: 0.010
+diff 0.5913390589066694
+train_loss:
+124355.44276632651
+val_loss:
+tensor(13821.6541)
+train_acc:
+0.010148148148148147
+val_acc:
+0.008
+epoch 39 train loss: 124355.443, val loss: 13821.654, train acc: 0.010, val acc: 0.008
+diff 0.510217366656434
+train_loss:
+124354.61334533508
+val_loss:
+tensor(13822.6242)
+train_acc:
+0.010333333333333333
+val_acc:
+0.008
+epoch 40 train loss: 124354.613, val loss: 13822.624, train acc: 0.010, val acc: 0.008
+diff 0.9701047924845625
+train_loss:
+124355.4025771174
+val_loss:
+tensor(13821.9965)
+train_acc:
+0.010777777777777778
+val_acc:
+0.009666666666666667
+epoch 41 train loss: 124355.403, val loss: 13821.997, train acc: 0.011, val acc: 0.010
+diff 0.6276418881716381
+train_loss:
+124355.81755111893
+val_loss:
+tensor(13822.5078)
+train_acc:
+0.010444444444444444
+val_acc:
+0.009666666666666667
+epoch 42 train loss: 124355.818, val loss: 13822.508, train acc: 0.010, val acc: 0.010
+diff 0.5112600073989597
+train_loss:
+124355.04076910477
+val_loss:
+tensor(13821.9348)
+train_acc:
+0.010148148148148147
+val_acc:
+0.009666666666666667
+epoch 43 train loss: 124355.041, val loss: 13821.935, train acc: 0.010, val acc: 0.010
+diff 0.5729808037376642
+train_loss:
+124355.80935208822
+val_loss:
+tensor(13821.9726)
+train_acc:
+0.009481481481481481
+val_acc:
+0.009666666666666667
+epoch 44 train loss: 124355.809, val loss: 13821.973, train acc: 0.009, val acc: 0.010
+diff 0.03780587631626986
+train_loss:
+124354.80530067153
+val_loss:
+tensor(13821.4669)
+train_acc:
+0.010777777777777778
+val_acc:
+0.009666666666666667
+epoch 45 train loss: 124354.805, val loss: 13821.467, train acc: 0.011, val acc: 0.010
+diff 0.5057097409571725
+train_loss:
+124355.85008383972
+val_loss:
+tensor(13821.7572)
+train_acc:
+0.009777777777777778
+val_acc:
+0.008
+epoch 46 train loss: 124355.850, val loss: 13821.757, train acc: 0.010, val acc: 0.008
+diff 0.2903310954825429
+train_loss:
+124355.97860831255
+val_loss:
+tensor(13821.1439)
+train_acc:
+0.009962962962962963
+val_acc:
+0.009666666666666667
+epoch 47 train loss: 124355.979, val loss: 13821.144, train acc: 0.010, val acc: 0.010
+diff 0.6133216851631005
+train_loss:
+124355.56496249614
+val_loss:
+tensor(13821.5391)
+train_acc:
+0.01037037037037037
+val_acc:
+0.008
+epoch 48 train loss: 124355.565, val loss: 13821.539, train acc: 0.010, val acc: 0.008
+diff 0.39522461396882136
+train_loss:
+124355.70655243724
+val_loss:
+tensor(13822.2352)
+train_acc:
+0.010333333333333333
+val_acc:
+0.008
+epoch 49 train loss: 124355.707, val loss: 13822.235, train acc: 0.010, val acc: 0.008
+diff 0.6960310583381215
+train_loss:
+124354.78610310786
+val_loss:
+tensor(13821.7232)
+train_acc:
+0.010851851851851852
+val_acc:
+0.009666666666666667
+epoch 50 train loss: 124354.786, val loss: 13821.723, train acc: 0.011, val acc: 0.010
+diff 0.5119271503335767
+Selecting using RandomMemorySetManager
